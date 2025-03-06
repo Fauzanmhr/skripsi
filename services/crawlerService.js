@@ -38,8 +38,6 @@ export async function fetchReviews(googleMapsURL) {
         // Transform and clean the reviews
         return filteredReviews.map(review => ({
             id: review.review_id,
-            name: review.author.name,
-            rating: review.review.rating,
             review: cleanText(review.review.text),
             time_published: new Date(review.time.published / 1000).toISOString().slice(0, 19).replace("T", " "), // ✅ FIXED
             time_edited: review.time.last_edited 
@@ -69,8 +67,6 @@ export async function saveReviewsToDatabase(reviews) {
             if (existingReview) {
                 // Update existing review
                 await existingReview.update({
-                    name: reviewData.name,
-                    rating: reviewData.rating,
                     review: reviewData.review,
                     time_published: reviewData.time_published,
                     time_edited: reviewData.time_edited,

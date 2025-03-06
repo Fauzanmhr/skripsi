@@ -9,19 +9,17 @@
         </button>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mb-5">
         <div class="card-header text-center text-black">
             <h5 class="mb-0">Review List</h5>
         </div>
         <div class="card-body p-4">
-            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <div class="table-responsive" style="height: 600px; overflow-y: auto;">
                 <table class="table table-hover text-center table-striped">
                     <thead class="table-light sticky-top">
                         <tr>
-                            <th>Name</th>
-                            <th>Rating</th>
-                            <th class="text-start w-50">Review</th>
                             <th>Date</th>
+                            <th class="text-start w-50">Review</th>
                             <th>Sentiment</th>
                             <th>Source</th>
                         </tr>
@@ -34,10 +32,8 @@
                         <% } else { %>
                             <% reviews.forEach(review => { %>
                                 <tr>
-                                    <td><%= review.name %></td>
-                                    <td><%= review.rating %>/5</td>
-                                    <td class="text-start text-wrap"><%= review.review %></td>
                                     <td><%= new Date(review.time_published).toLocaleDateString() %></td>
+                                    <td class="text-start text-wrap"><%= review.review %></td>
                                     <td><%= review.sentiment || 'Pending' %></td>
                                     <td><%= review.source %></td>
                                 </tr>
@@ -48,8 +44,8 @@
             </div>
 
             <% if (pagination.totalPages > 1) { %>
-                <nav>
-                    <ul class="pagination justify-content-center mt-3">
+                <nav class="mt-4">
+                    <ul class="pagination flex-wrap justify-content-center">
                         <li class="page-item <%= pagination.page === 1 ? 'disabled' : '' %>">
                             <a class="page-link" href="<%= getPageUrl(pagination.page - 1) %>">&laquo;</a>
                         </li>

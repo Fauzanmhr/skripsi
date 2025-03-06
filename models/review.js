@@ -7,14 +7,6 @@ const Review = sequelize.define('Review', {
     primaryKey: true,
     allowNull: false
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  rating: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  },
   review: {
     type: DataTypes.TEXT,
     allowNull: false
