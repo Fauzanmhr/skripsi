@@ -1,0 +1,9 @@
+fastapi
+pydantic
+torch
+transformers
+nltk
+Sastrawi
+pandas
+uvicorn
+deep-translator
