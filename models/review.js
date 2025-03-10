@@ -15,10 +15,6 @@ const Review = sequelize.define('Review', {
     type: DataTypes.DATE,
     allowNull: false
   },
-  language: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   source: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -26,15 +22,6 @@ const Review = sequelize.define('Review', {
   sentiment: {
     type: DataTypes.ENUM('positif', 'negatif', 'netral', 'puas', 'kecewa'),
     allowNull: true
-  },
-  processed_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  processing_attempts: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0
   }
 }, {
   // Enable timestamps for createdAt and updatedAt

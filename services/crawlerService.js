@@ -35,12 +35,11 @@ export async function fetchReviews(googleMapsURL) {
             return [];
         }
         
-        // Transform and clean the reviews
+        // Transform and clean the reviews (without including the language field)
         return filteredReviews.map(review => ({
             id: review.review_id,
             review: cleanText(review.review.text),
             time_published: new Date(review.time.published / 1000).toISOString().slice(0, 19).replace("T", " "),
-            language: review.review.language,
             source: "Google Maps Reviews"
         }));
         
@@ -66,9 +65,7 @@ export async function saveReviewsToDatabase(reviews) {
                 await existingReview.update({
                     review: reviewData.review,
                     time_published: reviewData.time_published,
-                    language: reviewData.language,
                     source: reviewData.source,
-                    // Reset sentiment only if the review text has changed
                     sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment,
                     processed_at: existingReview.review !== reviewData.review ? null : existingReview.processed_at,
                     processing_attempts: existingReview.review !== reviewData.review ? 0 : existingReview.processing_attempts

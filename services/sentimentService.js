@@ -16,9 +16,7 @@ export async function analyzeSentiment(review) {
         // Update the review with the sentiment result
         if (response.data && response.data.sentiment) {
             await review.update({
-                sentiment: response.data.sentiment,
-                processed_at: new Date(),
-                processing_attempts: review.processing_attempts + 1
+                sentiment: response.data.sentiment // Only update sentiment
             });
             
             console.log(`Successfully analyzed review ${review.id}: ${response.data.sentiment}`);
@@ -27,11 +25,6 @@ export async function analyzeSentiment(review) {
             throw new Error('Invalid API response: missing sentiment prediction');
         }
     } catch (error) {
-        // Increment processing attempts
-        await review.update({
-            processing_attempts: review.processing_attempts + 1
-        });
-        
         console.error(`Error analyzing review ${review.id}:`, error.message);
         throw error;
     }
@@ -43,7 +36,7 @@ async function processPendingReviews() {
         // Find reviews with NULL sentiment
         const pendingReviews = await Review.findAll({
             where: {
-                sentiment: null
+                sentiment: null // Only check for sentiment
             },
             order: [['createdAt', 'ASC']],
             limit: 10  // Process in small batches
