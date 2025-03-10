@@ -12,7 +12,7 @@ export async function fetchReviews(googleMapsURL) {
         const reviews = await scraper(googleMapsURL, {
             sort_type: "newest",
             search_query: "",
-            pages: 12,
+            pages: 15,
             clean: true
         });
         
@@ -66,17 +66,14 @@ export async function saveReviewsToDatabase(reviews) {
                     review: reviewData.review,
                     time_published: reviewData.time_published,
                     source: reviewData.source,
-                    sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment,
-                    processed_at: existingReview.review !== reviewData.review ? null : existingReview.processed_at,
-                    processing_attempts: existingReview.review !== reviewData.review ? 0 : existingReview.processing_attempts
+                    sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment // Reset sentiment if review text changes
                 });
                 updatedCount++;
             } else {
                 // Create new review
                 await Review.create({
                     ...reviewData,
-                    sentiment: null,
-                    processed_at: null
+                    sentiment: null // Initialize sentiment as null
                 });
                 savedCount++;
             }

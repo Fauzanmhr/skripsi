@@ -30,33 +30,31 @@ export async function analyzeSentiment(review) {
     }
 }
 
-// Function to process a batch of unanalyzed reviews
+// Function to process all unanalyzed reviews sequentially
 async function processPendingReviews() {
     try {
-        // Find reviews with NULL sentiment
+        // Find all reviews with NULL sentiment
         const pendingReviews = await Review.findAll({
             where: {
-                sentiment: null // Only check for sentiment
+                sentiment: null // Only check for null sentiment
             },
-            order: [['createdAt', 'ASC']],
-            limit: 10  // Process in small batches
+            order: [['createdAt', 'ASC']] // Process oldest reviews first
         });
         
         if (pendingReviews.length === 0) {
+            console.log('No pending reviews to process.');
             return;
         }
         
         console.log(`Processing ${pendingReviews.length} pending reviews`);
         
-        // Process each review sequentially
+        // Process reviews one by one (sequentially)
         for (const review of pendingReviews) {
             try {
-                await analyzeSentiment(review);
-                // Small delay between requests to avoid overwhelming the API
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await analyzeSentiment(review); // Wait for each review to complete before moving to the next
             } catch (error) {
                 console.error(`Failed to process review ${review.id}:`, error.message);
-                // Continue with next review
+                // Continue with the next review even if one fails
             }
         }
     } catch (error) {
