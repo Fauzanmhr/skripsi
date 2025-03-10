@@ -43,9 +43,17 @@ app.use('/reviews', reviewRoutes);
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('error', {
+  res.status(500).render('error/error', {
     message: 'Something broke!',
     error: process.env.NODE_ENV === 'development' ? err : {}
+  });
+});
+
+// 404 handler for wrong paths
+app.use((req, res) => {
+  res.status(404).render('error/404', {
+    message: 'Page not found',
+    url: req.url
   });
 });
 

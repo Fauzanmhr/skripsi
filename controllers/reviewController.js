@@ -43,7 +43,7 @@ export async function renderReviewsPage(req, res) {
                 totalCount
             },
             page: 'reviews',
-            getPageUrl: (page) => getPageUrl(req, page) // Pass the getPageUrl function with req bound
+            getPageUrl: (page) => getPageUrl(req, page)
         });
     } catch (error) {
         console.error('Reviews page rendering error:', error);

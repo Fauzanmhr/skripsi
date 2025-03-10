@@ -15,10 +15,6 @@ const Review = sequelize.define('Review', {
     type: DataTypes.DATE,
     allowNull: false
   },
-  time_edited: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
   language: {
     type: DataTypes.STRING,
     allowNull: false
@@ -26,7 +22,6 @@ const Review = sequelize.define('Review', {
   source: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'Google Maps Reviews'
   },
   sentiment: {
     type: DataTypes.ENUM('positif', 'negatif', 'netral', 'puas', 'kecewa'),

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>404 - Page Not Found</title>
+  <link rel="stylesheet" href="/css/bootstrap.min.css">
+  <style>
+    .full-height {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .error-container {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container full-height">
+    <div class="error-container">
+      <h1 class="display-1">404</h1>
+      <h2>Page Not Found</h2>
+      <p>The page you're looking for doesn't exist: <code><%= url %></code></p>
+      <a href="/" class="btn btn-primary mt-3">Go to Home</a>
+    </div>
+  </div>
+</body>
+</html>

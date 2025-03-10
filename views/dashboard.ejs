@@ -1,140 +1,169 @@
 <%- include('partials/header', { title: title, page: page }) %>
-<div class="flex-wrapper">
-<div class="container content">
-    <div class="row mt-4 mb-4 w-100">
-        <div class="mx-auto">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Filter by Date Range</h5>
-                </div>
-                <div class="card-body">
-                    <form id="dateRangeForm" class="row g-3">
-                        <div class="col-md-5">
-                            <label for="startDate" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="startDate" name="startDate" value="<%= startDate %>">
-                        </div>
-                        <div class="col-md-5">
-                            <label for="endDate" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="endDate" name="endDate" value="<%= endDate %>">
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Filter</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row w-100 justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Sentiment Distribution</h5>
-                </div>
-                <div class="card-body text-center">
-                    <div class="chart-container" style="position: relative; width: 100%; max-width: 100%; height: 300px;">
-                        <canvas id="sentimentChart"></canvas>
-                    </div>
-                </div>
-            </div>
+<div class="flex-wrapper">
+  <div class="container content">
+    <!-- Date Filter -->
+    <div class="row mt-4 mb-4 w-100">
+      <div class="mx-auto">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+              Filter by Date Range
+              <% if (startDate !== dbMinDate || endDate !== dbMaxDate) { %>
+                <span class="badge bg-info ms-2">Filter Active</span>
+              <% } %>
+            </h5>
+          </div>
+          <div class="card-body">
+            <form id="dateRangeForm" class="row g-3">
+              <div class="col-md-4">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate" name="startDate" 
+                       value="<%= startDate %>" min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
+              </div>
+              <div class="col-md-4">
+                <label for="endDate" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="endDate" name="endDate" 
+                       value="<%= endDate %>" min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Filter</button>
+                <% if (startDate !== dbMinDate || endDate !== dbMaxDate) { %>
+                  <a href="/" class="btn btn-secondary">Reset</a>
+                <% } else { %>
+                  <a href="/" class="btn btn-secondary" style="visibility: hidden;">Reset</a>
+                <% } %>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Sentiment Breakdown</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group" id="sentimentBreakdown">
-                        <!-- JavaScript -->
-                    </ul>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    
+    <!-- Chart and Stats -->
+    <div class="row w-100 justify-content-center">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              Sentiment Distribution
+            </h5>
+          </div>
+          <div class="card-body text-center">
+            <div class="chart-container" style="position: relative; width: 100%; max-width: 100%; height: 300px;">
+              <canvas id="sentimentChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Sentiment Breakdown</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-group" id="sentimentBreakdown"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-</div>
+
+<!-- Scripts -->
 <script src="/js/bootstrap.bundle.min.js"></script>
 <%- include('./partials/footer') %>
 <script src="/js/chart.umd.js"></script>
 <script>
-    const stats = <%- stats %>;
-
-    const ctx = document.getElementById('sentimentChart').getContext('2d');
-
-    const colors = {
-        'positif': 'rgba(75, 192, 192, 0.8)',
-        'negatif': 'rgba(255, 99, 132, 0.8)',
-        'netral': 'rgba(201, 203, 207, 0.8)',
-        'puas': 'rgba(54, 162, 235, 0.8)',
-        'kecewa': 'rgba(255, 159, 64, 0.8)'
-    };
-
-    const labels = stats.labels;
-    const data = labels.map(label => stats.counts[label]);
-    const backgroundColors = labels.map(label => colors[label]);
-
-    const sentimentChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Number of Reviews',
-                data: data,
-                backgroundColor: backgroundColors,
-                borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false, 
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Reviews: ${context.raw}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    }
-                }
+  // Get data from server
+  const stats = <%- stats %>;
+  
+  // Color mapping
+  const colors = {
+    'positif': 'rgba(75, 192, 192, 0.8)',
+    'negatif': 'rgba(255, 99, 132, 0.8)',
+    'netral': 'rgba(201, 203, 207, 0.8)',
+    'puas': 'rgba(54, 162, 235, 0.8)',
+    'kecewa': 'rgba(255, 159, 64, 0.8)'
+  };
+  
+  // Prepare chart data
+  const labels = stats.labels;
+  const data = labels.map(label => stats.counts[label]);
+  const backgroundColors = labels.map(label => colors[label]);
+  
+  // Create chart
+  const ctx = document.getElementById('sentimentChart').getContext('2d');
+  const sentimentChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Number of Reviews',
+        data: data,
+        backgroundColor: backgroundColors,
+        borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false, 
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Reviews: ${context.raw}`;
             }
+          }
         }
-    });
-
-    const breakdownList = document.getElementById('sentimentBreakdown');
-    const totalReviews = data.reduce((sum, current) => sum + current, 0);
-
-    labels.forEach((label, index) => {
-        const count = data[index];
-        const percentage = totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0;
-
-        const listItem = document.createElement('li');
-        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-        const badgeSpan = document.createElement('span');
-        badgeSpan.className = 'badge bg-primary rounded-pill';
-        badgeSpan.textContent = `${count} (${percentage}%)`;
-
-        listItem.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="me-2" style="width: 16px; height: 16px; background-color: ${colors[label]}; border-radius: 50%; display: inline-block;"></span>
-                ${label.charAt(0).toUpperCase() + label.slice(1)}
-            </div>
-        `;
-        listItem.appendChild(badgeSpan);
-        breakdownList.appendChild(listItem);
-    });
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      }
+    }
+  });
+  
+  // Create breakdown list
+  const breakdownList = document.getElementById('sentimentBreakdown');
+  const totalReviews = data.reduce((sum, current) => sum + current, 0);
+  
+  labels.forEach((label, index) => {
+    const count = data[index];
+    const percentage = totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0;
+    
+    const listItem = document.createElement('li');
+    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+    
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = 'badge bg-primary rounded-pill';
+    badgeSpan.textContent = `${count} (${percentage}%)`;
+    
+    listItem.innerHTML = `
+      <div class="d-flex align-items-center">
+        <span class="me-2" style="width: 16px; height: 16px; background-color: ${colors[label]}; border-radius: 50%; display: inline-block;"></span>
+        ${label.charAt(0).toUpperCase() + label.slice(1)}
+      </div>
+    `;
+    
+    listItem.appendChild(badgeSpan);
+    breakdownList.appendChild(listItem);
+  });
+  
+  // Date validation
+  document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      e.preventDefault();
+      alert('Start date cannot be after end date');
+    }
+  });
 </script>
 </body>
 </html>
