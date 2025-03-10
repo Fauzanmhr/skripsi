@@ -9,7 +9,7 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
               Filter by Date Range
-              <% if (startDate !== dbMinDate || endDate !== dbMaxDate) { %>
+              <% if (startDate !== null || endDate !== null) { %>
                 <span class="badge bg-info ms-2">Filter Active</span>
               <% } %>
             </h5>
@@ -19,16 +19,18 @@
               <div class="col-md-4">
                 <label for="startDate" class="form-label">Start Date</label>
                 <input type="date" class="form-control" id="startDate" name="startDate" 
-                       value="<%= startDate %>" min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
+                       <% if (startDate) { %> value="<%= startDate %>" <% } %> 
+                       min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
               </div>
               <div class="col-md-4">
                 <label for="endDate" class="form-label">End Date</label>
                 <input type="date" class="form-control" id="endDate" name="endDate" 
-                       value="<%= endDate %>" min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
+                       <% if (endDate) { %> value="<%= endDate %>" <% } %> 
+                       min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
               </div>
               <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">Filter</button>
-                <% if (startDate !== dbMinDate || endDate !== dbMaxDate) { %>
+                <% if (startDate !== null || endDate !== null) { %>
                   <a href="/" class="btn btn-secondary">Reset</a>
                 <% } else { %>
                   <a href="/" class="btn btn-secondary" style="visibility: hidden;">Reset</a>

@@ -12,7 +12,7 @@ export async function renderDashboard(req, res) {
   try {
     const { startDate, endDate } = req.query;
     
-    // Get min and max dates from database
+    // Get min and max dates from the database
     const dateRanges = await Review.findAll({
       attributes: [
         [sequelize.fn('MIN', sequelize.col('time_published')), 'minDate'],
@@ -24,9 +24,9 @@ export async function renderDashboard(req, res) {
     const dbMinDate = formatDate(dateRanges[0].minDate);
     const dbMaxDate = formatDate(dateRanges[0].maxDate);
     
-    // Set date range (user input or database limits)
-    const start = startDate ? new Date(startDate) : dbMinDate ? new Date(dbMinDate) : new Date(0);
-    const end = endDate ? new Date(endDate) : dbMaxDate ? new Date(dbMaxDate) : new Date();
+    // Set date range (user input or null if not provided)
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
     
     // Get sentiment stats
     const sentimentData = await Review.findAll({
@@ -36,7 +36,7 @@ export async function renderDashboard(req, res) {
       ],
       where: {
         sentiment: { [Op.not]: null },
-        time_published: { [Op.between]: [start, end] }
+        ...(start && end && { time_published: { [Op.between]: [start, end] } })
       },
       group: ['sentiment'],
       raw: true
@@ -56,8 +56,8 @@ export async function renderDashboard(req, res) {
     res.render('dashboard', {
       title: 'Sentiment Analysis Dashboard',
       stats: JSON.stringify({ labels: sentimentLabels, counts }),
-      startDate: startDate || dbMinDate,
-      endDate: endDate || dbMaxDate,
+      startDate: startDate || null,
+      endDate: endDate || null,
       dbMinDate,
       dbMaxDate,
       page: 'dashboard',
