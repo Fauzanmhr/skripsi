@@ -1,12 +1,9 @@
 import axios from 'axios';
 import cron from 'node-cron';
 import Review from '../models/review.js';
-import { Op } from 'sequelize';
 
 // Sentiment analysis API configuration
-const API_URL = process.env.SENTIMENT_API_URL || 'http://localhost:5000/predict';
-const RETRY_DELAY = parseInt(process.env.SENTIMENT_API_RETRY_DELAY || 5000);
-const MAX_ATTEMPTS = 5;
+const API_URL = process.env.SENTIMENT_API_URL || 'http://localhost:8000/predict';
 
 // Function to analyze sentiment for a single review
 export async function analyzeSentiment(review) {
@@ -46,8 +43,7 @@ async function processPendingReviews() {
         // Find reviews with NULL sentiment
         const pendingReviews = await Review.findAll({
             where: {
-                sentiment: null,
-                processing_attempts: { [Op.lt]: MAX_ATTEMPTS }
+                sentiment: null
             },
             order: [['createdAt', 'ASC']],
             limit: 10  // Process in small batches
