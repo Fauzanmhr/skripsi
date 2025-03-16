@@ -22,11 +22,11 @@ const ReviewExtra = sequelize.define('review_extra', {
     allowNull: false
   },
   age_category: {
-    type: DataTypes.ENUM('≤12', '13-28', '29-44', '45-60', '≥61'),
+    type: DataTypes.STRING,
     allowNull: false
   },
   occupation: {
-    type: DataTypes.ENUM('Mahasiswa', 'Karyawan', 'Wiraswasta', 'Lainnya'),
+    type: DataTypes.STRING,
     allowNull: false
   },
   first_visit: {
