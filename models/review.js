@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
-const Review = sequelize.define('Review', {
+const Review = sequelize.define('review', {
   id: {
     type: DataTypes.STRING,
     primaryKey: true,
@@ -24,9 +24,7 @@ const Review = sequelize.define('Review', {
     allowNull: true
   }
 }, {
-  // Enable timestamps for createdAt and updatedAt
   timestamps: true,
-  // Add indexes for common queries
   indexes: [
     {
       name: 'idx_sentiment',
