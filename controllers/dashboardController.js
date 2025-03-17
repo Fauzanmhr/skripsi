@@ -4,9 +4,7 @@ import { Op } from 'sequelize';
 import moment from 'moment';
 
 // Format date for HTML input
-function formatDate(date) {
-  return date ? new Date(date).toISOString().split('T')[0] : '';
-}
+const formatDate = date => date ? new Date(date).toISOString().split('T')[0] : '';
 
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {
@@ -14,7 +12,7 @@ export async function renderDashboard(req, res) {
     const { startDate, endDate } = req.query;
     
     // Get min and max dates from the database
-    const dateRanges = await Review.findAll({
+    const [dateRange] = await Review.findAll({
       attributes: [
         [sequelize.fn('MIN', sequelize.col('time_published')), 'minDate'],
         [sequelize.fn('MAX', sequelize.col('time_published')), 'maxDate']
@@ -22,12 +20,16 @@ export async function renderDashboard(req, res) {
       raw: true
     });
     
-    const dbMinDate = formatDate(dateRanges[0].minDate);
-    const dbMaxDate = formatDate(dateRanges[0].maxDate);
+    const dbMinDate = formatDate(dateRange.minDate);
+    const dbMaxDate = formatDate(dateRange.maxDate);
     
-    // Set date range (user input or null if not provided)
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
+    // Set date range filter if provided
+    const dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter.time_published = { 
+        [Op.between]: [new Date(startDate), new Date(endDate)] 
+      };
+    }
     
     // Get sentiment stats
     const sentimentData = await Review.findAll({
@@ -37,7 +39,7 @@ export async function renderDashboard(req, res) {
       ],
       where: {
         sentiment: { [Op.not]: null },
-        ...(start && end && { time_published: { [Op.between]: [start, end] } })
+        ...dateFilter
       },
       group: ['sentiment'],
       raw: true
@@ -52,24 +54,21 @@ export async function renderDashboard(req, res) {
       ],
       where: {
         sentiment: { [Op.not]: null },
-        ...(start && end && { time_published: { [Op.between]: [start, end] } })
+        ...dateFilter
       },
       group: ['date', 'sentiment'],
       order: [[sequelize.fn('DATE', sequelize.col('time_published')), 'ASC']],
       raw: true
     });
     
-    // Format results for sentiment distribution
+    // Process data for charts
     const sentimentLabels = ['positif', 'negatif', 'netral', 'puas', 'kecewa'];
-    const counts = {};
-    
-    // Initialize counts with zeros
-    sentimentLabels.forEach(label => counts[label] = 0);
+    const counts = Object.fromEntries(sentimentLabels.map(label => [label, 0]));
     
     // Fill in actual counts
     sentimentData.forEach(item => counts[item.sentiment] = parseInt(item.count));
     
-    // Process data for time series chart
+    // Process time series data
     const dates = [...new Set(sentimentByTime.map(item => item.date))].sort();
     const timeSeriesData = {};
     
@@ -101,8 +100,7 @@ export async function renderDashboard(req, res) {
       endDate: endDate || null,
       dbMinDate,
       dbMaxDate,
-      page: 'dashboard',
-      body: ''
+      page: 'dashboard'
     });
   } catch (error) {
     console.error('Dashboard rendering error:', error);

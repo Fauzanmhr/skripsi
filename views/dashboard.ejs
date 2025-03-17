@@ -19,13 +19,13 @@
               <div class="col-md-4">
                 <label for="startDate" class="form-label">Start Date</label>
                 <input type="date" class="form-control" id="startDate" name="startDate" 
-                       <% if (startDate) { %> value="<%= startDate %>" <% } %> 
+                       value="<%= startDate || '' %>" 
                        min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
               </div>
               <div class="col-md-4">
                 <label for="endDate" class="form-label">End Date</label>
                 <input type="date" class="form-control" id="endDate" name="endDate" 
-                       <% if (endDate) { %> value="<%= endDate %>" <% } %> 
+                       value="<%= endDate || '' %>" 
                        min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
               </div>
               <div class="col-md-4 d-flex align-items-end">
@@ -33,7 +33,7 @@
                 <% if (startDate !== null || endDate !== null) { %>
                   <a href="/" class="btn btn-secondary">Reset</a>
                 <% } else { %>
-                  <a href="/" class="btn btn-secondary" style="visibility: hidden;">Reset</a>
+                  <button type="button" class="btn btn-secondary invisible">Reset</button>
                 <% } %>
               </div>
             </form>
@@ -47,12 +47,10 @@
       <div class="col-md-8 mb-4">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0">
-              Sentiment Distribution
-            </h5>
+            <h5 class="card-title mb-0">Sentiment Distribution</h5>
           </div>
           <div class="card-body text-center">
-            <div class="chart-container" style="position: relative; width: 100%; max-width: 100%; height: 300px;">
+            <div class="chart-container" style="position: relative; width: 100%; height: 300px;">
               <canvas id="sentimentChart"></canvas>
             </div>
           </div>
@@ -69,10 +67,10 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Sentiment by Time Chart -->
     <div class="row w-100 mb-4">
-      <div class="col-md-8 mb-4">
+      <div class="col-md-12">
         <div class="card">
           <div class="card-header">
             <h5 class="card-title mb-0">Sentiment Trends Over Time</h5>
@@ -87,7 +85,9 @@
     </div>
   </div>
 </div>
+
 <%- include('./partials/footer') %>
+
 <!-- Scripts -->
 <script src="/js/chart.umd.js"></script>
 <script>
@@ -95,148 +95,171 @@
   const stats = <%- stats %>;
   const timeSeriesData = <%- timeSeriesData %>;
   
-  // Color mapping
+  // Color mapping for sentiment categories
   const colors = {
-    'positif': 'rgba(75, 192, 192, 0.8)',
-    'negatif': 'rgba(255, 99, 132, 0.8)',
-    'netral': 'rgba(201, 203, 207, 0.8)',
-    'puas': 'rgba(54, 162, 235, 0.8)',
-    'kecewa': 'rgba(255, 159, 64, 0.8)'
+    'positif': 'rgba(75, 192, 192, 0.8)',  // Green
+    'negatif': 'rgba(255, 99, 132, 0.8)',  // Red
+    'netral': 'rgba(201, 203, 207, 0.8)',  // Gray
+    'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
+    'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
   };
   
-  // Prepare chart data for sentiment distribution
-  const labels = stats.labels;
-  const data = labels.map(label => stats.counts[label]);
-  const backgroundColors = labels.map(label => colors[label]);
+  // Create charts and breakdown
+  document.addEventListener('DOMContentLoaded', function() {
+    const labels = stats.labels;
+    const data = labels.map(label => stats.counts[label]);
+    
+    // Create sentiment chart
+    createSentimentChart(labels, data);
+    
+    // Create time series chart
+    createTimeSeriesChart(labels);
+    
+    // Create breakdown list
+    createBreakdownList(labels, data);
+    
+    // Setup date validation
+    setupDateValidation();
+  });
   
-  // Create chart for sentiment distribution
-  const ctx = document.getElementById('sentimentChart').getContext('2d');
-  const sentimentChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Number of Reviews',
-        data: data,
-        backgroundColor: backgroundColors,
-        borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false, 
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Reviews: ${context.raw}`;
+  // Create sentiment distribution chart
+  function createSentimentChart(labels, data) {
+    const backgroundColors = labels.map(label => colors[label]);
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Number of Reviews',
+          data: data,
+          backgroundColor: backgroundColors,
+          borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false, 
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `Reviews: ${context.raw}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+  
+  // Create time series chart
+  function createTimeSeriesChart(labels) {
+    const datasets = labels.map(sentiment => {
+      return {
+        label: sentiment.charAt(0).toUpperCase() + sentiment.slice(1),
+        data: timeSeriesData.series[sentiment],
+        borderColor: colors[sentiment].replace('0.8', '1'),
+        backgroundColor: colors[sentiment].replace('0.8', '0.1'),
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      };
+    });
+    
+    const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+    new Chart(timeSeriesCtx, {
+      type: 'line',
+      data: {
+        labels: timeSeriesData.dates,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { 
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            stacked: false,
+            ticks: { precision: 0 }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
             }
           }
         }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0 }
-        }
       }
-    }
-  });
+    });
+  }
   
-  // Create time series chart
-  const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
-  const datasets = labels.map(sentiment => {
-    return {
-      label: sentiment.charAt(0).toUpperCase() + sentiment.slice(1),
-      data: timeSeriesData.series[sentiment],
-      borderColor: colors[sentiment].replace('0.8', '1'),
-      backgroundColor: colors[sentiment].replace('0.8', '0.1'),
-      borderWidth: 2,
-      tension: 0.3,
-      fill: true,
-    };
-  });
+  // Create sentiment breakdown list
+  function createBreakdownList(labels, data) {
+    const breakdownList = document.getElementById('sentimentBreakdown');
+    const totalReviews = data.reduce((sum, current) => sum + current, 0);
+    
+    breakdownList.innerHTML = '';
+    
+    labels.forEach((label, index) => {
+      const count = data[index];
+      const percentage = totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0;
+      
+      const listItem = document.createElement('li');
+      listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+      
+      const badgeSpan = document.createElement('span');
+      badgeSpan.className = 'badge bg-primary rounded-pill';
+      badgeSpan.textContent = `${count} (${percentage}%)`;
+      
+      listItem.innerHTML = `
+        <div class="d-flex align-items-center">
+          <span class="me-2" style="width: 16px; height: 16px; background-color: ${colors[label]}; border-radius: 50%; display: inline-block;"></span>
+          ${label.charAt(0).toUpperCase() + label.slice(1)}
+        </div>
+      `;
+      
+      listItem.appendChild(badgeSpan);
+      breakdownList.appendChild(listItem);
+    });
+  }
   
-  const timeSeriesChart = new Chart(timeSeriesCtx, {
-    type: 'line',
-    data: {
-      labels: timeSeriesData.dates,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
-      plugins: {
-        legend: { 
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          stacked: false,
-          ticks: { precision: 0 }
-        },
-        x: {
-          ticks: {
-            maxRotation: 45,
-            minRotation: 45
-          }
-        }
+  // Setup date validation
+  function setupDateValidation() {
+    document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+        e.preventDefault();
+        alert('Start date cannot be after end date');
       }
-    }
-  });
-  
-  // Create breakdown list
-  const breakdownList = document.getElementById('sentimentBreakdown');
-  const totalReviews = data.reduce((sum, current) => sum + current, 0);
-  
-  labels.forEach((label, index) => {
-    const count = data[index];
-    const percentage = totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0;
-    
-    const listItem = document.createElement('li');
-    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-    
-    const badgeSpan = document.createElement('span');
-    badgeSpan.className = 'badge bg-primary rounded-pill';
-    badgeSpan.textContent = `${count} (${percentage}%)`;
-    
-    listItem.innerHTML = `
-      <div class="d-flex align-items-center">
-        <span class="me-2" style="width: 16px; height: 16px; background-color: ${colors[label]}; border-radius: 50%; display: inline-block;"></span>
-        ${label.charAt(0).toUpperCase() + label.slice(1)}
-      </div>
-    `;
-    
-    listItem.appendChild(badgeSpan);
-    breakdownList.appendChild(listItem);
-  });
-  
-  // Date validation
-  document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      e.preventDefault();
-      alert('Start date cannot be after end date');
-    }
-  });
+    });
+  }
 </script>
-</body>
-</html>

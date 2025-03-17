@@ -5,9 +5,7 @@ import { processGoogleSheetsData } from '../services/googleSheetsService.js';
 
 // Helper function to generate pagination URLs
 function getPageUrl(req, page) {
-  const protocol = req.protocol;
-  const host = req.get('host');
-  const baseUrl = `${protocol}://${host}${req.baseUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
   const url = new URL(baseUrl);
   url.searchParams.set('page', page);
   return url.search;
@@ -23,7 +21,7 @@ export async function renderReviewsPage(req, res) {
     // Get total count for pagination
     const totalCount = await Review.count();
     
-    // Get reviews with pagination (including extra data if available)
+    // Get reviews with pagination
     const reviews = await Review.findAll({
       include: [{ model: ReviewExtra, required: false }],
       order: [['time_published', 'DESC']],
@@ -60,11 +58,8 @@ export async function renderReviewsPage(req, res) {
 export async function handleCrawlRequest(req, res) {
   try {
     const googleMapsURL = process.env.GOOGLE_MAPS_URL;
-    
-    // Start crawling process
     const result = await crawlAndSaveReviews(googleMapsURL);
     
-    // Return JSON response with results
     res.json({
       success: true,
       message: `Crawling completed. Saved: ${result.saved}, Updated: ${result.updated}, Errors: ${result.errors}`,
@@ -84,11 +79,8 @@ export async function handleCrawlRequest(req, res) {
 export async function handleSheetsCrawlRequest(req, res) {
   try {
     const sheetsUrl = process.env.GOOGLE_SHEETS_URL;
-    
-    // Start sheets processing
     const result = await processGoogleSheetsData(sheetsUrl);
     
-    // Return JSON response with results
     res.json({
       success: true,
       message: `Google Sheets processing completed. Saved: ${result.saved}, Updated: ${result.updated}, Errors: ${result.errors}`,
