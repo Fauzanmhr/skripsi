@@ -59,8 +59,8 @@ async function processPendingReviews() {
 
 // Start the sentiment analysis background job
 export function startSentimentAnalysisJob() {
-  // Fix the cron expression (there was a syntax error in the original)
-  const cronSchedule = '*/5 * * * *';  // Run every 5 minutes
+  // cron schedule for every 5 minutes
+  const cronSchedule = '*/5 * * * *';
   
   // Schedule the job
   cron.schedule(cronSchedule, async () => {
