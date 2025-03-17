@@ -4,20 +4,24 @@ import { Readable } from 'stream';
 import Review from '../models/review.js';
 import ReviewExtra from '../models/review_extra.js';
 
-// Function to clean review text
-function cleanText(text) {
-  return text ? text.replace(/\s+/g, ' ').trim() : '';
-}
+// Mapping headers from CSV to database fields
+const HEADER_MAP = {
+  'ID': 'id',
+  'Timestamp': 'timestamp',
+  'Jenis Kelamin ': 'gender',
+  'Usia': 'age_category',
+  'Pekerjaan': 'occupation',
+  'Apakah ini kunjungan pertama Anda ke De.u Coffee ?': 'first_visit',
+  'Ceritakan ulasan atau pengalaman Anda terhadap De.u Coffee?': 'review_text'
+};
 
-// Function to fetch CSV data from Google Sheets
+// Function to clean review text by trimming and removing extra spaces
+const cleanText = (text) => text ? text.replace(/\s+/g, ' ').trim() : '';
+
+// Fetch CSV data from Google Sheets
 export async function fetchGoogleSheetsData(sheetsUrl) {
   try {
-    const response = await axios({
-      method: 'get',
-      url: sheetsUrl,
-      responseType: 'text'
-    });
-    
+    const response = await axios.get(sheetsUrl, { responseType: 'text' });
     return response.data;
   } catch (error) {
     console.error('Error fetching Google Sheets data:', error);
@@ -25,27 +29,13 @@ export async function fetchGoogleSheetsData(sheetsUrl) {
   }
 }
 
-// Function to parse CSV data
-export async function parseCSVData(csvData) {
+// Parse CSV data into JSON format
+export function parseCSVData(csvData) {
   return new Promise((resolve, reject) => {
     const results = [];
-    
-    const stream = Readable.from(csvData);
-    
-    stream
+    Readable.from(csvData)
       .pipe(csv({
-        mapHeaders: ({ header }) => {
-          const headerMap = {
-            'ID': 'id',
-            'Timestamp': 'timestamp',
-            'Jenis Kelamin ': 'gender',
-            'Usia': 'age_category',
-            'Pekerjaan': 'occupation',
-            'Apakah ini kunjungan pertama Anda ke De.u Coffee ?': 'first_visit',
-            'Ceritakan ulasan atau pengalaman Anda terhadap De.u Coffee?': 'review_text'
-          };
-          return headerMap[header] || header;
-        }
+        mapHeaders: ({ header }) => HEADER_MAP[header] || header
       }))
       .on('data', (data) => results.push(data))
       .on('end', () => resolve(results))
@@ -53,29 +43,28 @@ export async function parseCSVData(csvData) {
   });
 }
 
-// Process the parsed data and transform it into our data model format
+// Format timestamp into SQL-compatible format
+function formatTimestamp(timestamp) {
+  try {
+    return new Date(timestamp || Date.now()).toISOString().slice(0, 19).replace("T", " ");
+  } catch (error) {
+    return new Date().toISOString().slice(0, 19).replace("T", " ");
+  }
+}
+
+// Transform parsed CSV data into structured database format
 export function transformSheetData(parsedData) {
   return parsedData
     .map(row => {
-      const reviewId = row.id && row.id.trim() !== '' ? row.id : `form-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-
-      let isFirstVisit = false;
-      if (typeof row.first_visit === 'string') {
-        isFirstVisit = row.first_visit.includes('Ya') || row.first_visit.includes('pertama');
-      }
-
-      let timePublished;
-      try {
-        const timestamp = row.timestamp || new Date().toISOString();
-        timePublished = new Date(timestamp).toISOString().slice(0, 19).replace("T", " ");
-      } catch (error) {
-        timePublished = new Date().toISOString().slice(0, 19).replace("T", " ");
-      }
-
+      const reviewId = row.id?.trim() || `form-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const isFirstVisit = typeof row.first_visit === 'string' && 
+                          (row.first_visit.includes('Ya') || row.first_visit.includes('pertama'));
+      const timePublished = formatTimestamp(row.timestamp);
+      
       return {
         review: {
           id: reviewId,
-          review: cleanText(row.review_text),  // Apply cleanText here
+          review: cleanText(row.review_text),
           time_published: timePublished,
           source: 'Google Forms'
         },
@@ -88,63 +77,57 @@ export function transformSheetData(parsedData) {
         }
       };
     })
-    .filter(item => item.review.review.trim() !== '');
+    .filter(item => item.review.review.trim() !== ''); // Filter out empty reviews
 }
 
-// Save the transformed data to the database
+// Save transformed data to database, avoiding duplicate ReviewExtra entries
 export async function saveSheetDataToDatabase(transformedData) {
-  let savedCount = 0;
-  let updatedCount = 0;
-  let errorCount = 0;
+  const result = { saved: 0, updated: 0, errors: 0, total: transformedData.length };
   
   for (const data of transformedData) {
     try {
       const existingReview = await Review.findByPk(data.review.id);
       
       if (existingReview) {
+        // Update existing review if found
         await existingReview.update({
           review: data.review.review,
           time_published: data.review.time_published,
           source: data.review.source,
           sentiment: existingReview.review !== data.review.review ? null : existingReview.sentiment
         });
-
-        const existingExtra = await ReviewExtra.findOne({ where: { review_id: data.reviewExtra.review_id } });
-        if (existingExtra) {
-          await existingExtra.update(data.reviewExtra);
+        
+        // Check if ReviewExtra already exists
+        const existingReviewExtra = await ReviewExtra.findOne({ where: { review_id: data.review.id } });
+        if (existingReviewExtra) {
+          await existingReviewExtra.update(data.reviewExtra); // Update if exists
         } else {
-          await ReviewExtra.create(data.reviewExtra);
+          await ReviewExtra.create(data.reviewExtra); // Create new entry if not exists
         }
 
-        updatedCount++;
+        result.updated++;
       } else {
+        // Create new review and associated ReviewExtra
         await Review.create(data.review);
         await ReviewExtra.create(data.reviewExtra);
-        savedCount++;
+        result.saved++;
       }
     } catch (error) {
       console.error(`Error saving review data ${data.review.id}:`, error);
-      errorCount++;
+      result.errors++;
     }
   }
   
-  return {
-    saved: savedCount,
-    updated: updatedCount,
-    errors: errorCount,
-    total: transformedData.length
-  };
+  return result;
 }
 
-// Main function to fetch, process, and save data from Google Sheets
+// Main function to process Google Sheets data
 export async function processGoogleSheetsData(sheetsUrl) {
   try {
     const csvData = await fetchGoogleSheetsData(sheetsUrl);
     const parsedData = await parseCSVData(csvData);
     const transformedData = transformSheetData(parsedData);
-    const result = await saveSheetDataToDatabase(transformedData);
-    
-    return result;
+    return await saveSheetDataToDatabase(transformedData);
   } catch (error) {
     console.error("Error processing Google Sheets data:", error);
     throw error;
