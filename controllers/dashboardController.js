@@ -1,6 +1,7 @@
 import Review from '../models/review.js';
 import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
+import moment from 'moment';
 
 // Format date for HTML input
 function formatDate(date) {
@@ -42,7 +43,23 @@ export async function renderDashboard(req, res) {
       raw: true
     });
     
-    // Format results
+    // Get sentiment by time (grouped by day)
+    const sentimentByTime = await Review.findAll({
+      attributes: [
+        [sequelize.fn('DATE', sequelize.col('time_published')), 'date'],
+        'sentiment',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        sentiment: { [Op.not]: null },
+        ...(start && end && { time_published: { [Op.between]: [start, end] } })
+      },
+      group: ['date', 'sentiment'],
+      order: [[sequelize.fn('DATE', sequelize.col('time_published')), 'ASC']],
+      raw: true
+    });
+    
+    // Format results for sentiment distribution
     const sentimentLabels = ['positif', 'negatif', 'netral', 'puas', 'kecewa'];
     const counts = {};
     
@@ -52,10 +69,34 @@ export async function renderDashboard(req, res) {
     // Fill in actual counts
     sentimentData.forEach(item => counts[item.sentiment] = parseInt(item.count));
     
+    // Process data for time series chart
+    const dates = [...new Set(sentimentByTime.map(item => item.date))].sort();
+    const timeSeriesData = {};
+    
+    // Initialize the time series data structure
+    sentimentLabels.forEach(sentiment => {
+      timeSeriesData[sentiment] = dates.map(() => 0);
+    });
+    
+    // Fill in the data
+    sentimentByTime.forEach(item => {
+      const dateIndex = dates.indexOf(item.date);
+      if (dateIndex !== -1 && sentimentLabels.includes(item.sentiment)) {
+        timeSeriesData[item.sentiment][dateIndex] = parseInt(item.count);
+      }
+    });
+    
+    // Format dates for display
+    const formattedDates = dates.map(date => moment(date).format('MMM DD, YYYY'));
+    
     // Render the dashboard
     res.render('dashboard', {
       title: 'Sentiment Analysis Dashboard',
       stats: JSON.stringify({ labels: sentimentLabels, counts }),
+      timeSeriesData: JSON.stringify({
+        dates: formattedDates,
+        series: timeSeriesData
+      }),
       startDate: startDate || null,
       endDate: endDate || null,
       dbMinDate,
