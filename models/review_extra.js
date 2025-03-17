@@ -4,7 +4,8 @@ import Review from './review.js';
 
 const ReviewExtra = sequelize.define('review_extra', {
   id: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true,
     allowNull: false
   },
@@ -18,7 +19,7 @@ const ReviewExtra = sequelize.define('review_extra', {
     onDelete: 'CASCADE'
   },
   gender: {
-    type: DataTypes.ENUM('Laki-laki', 'Perempuan'),
+    type: DataTypes.STRING,
     allowNull: false
   },
   age_category: {
@@ -37,6 +38,7 @@ const ReviewExtra = sequelize.define('review_extra', {
   timestamps: true
 });
 
+// Define associations
 Review.hasOne(ReviewExtra, { foreignKey: 'review_id', onDelete: 'CASCADE' });
 ReviewExtra.belongsTo(Review, { foreignKey: 'review_id' });
 

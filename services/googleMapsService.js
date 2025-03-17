@@ -16,7 +16,6 @@ export async function fetchReviews(googleMapsURL) {
             clean: true
         });
         
-        // Parse the reviews string into a JavaScript object
         let parsedReviews;
         try {
             parsedReviews = JSON.parse(reviews);
@@ -24,18 +23,15 @@ export async function fetchReviews(googleMapsURL) {
             throw new Error("Failed to parse reviews data: " + parseError.message);
         }
         
-        // Filter reviews: Only include reviews with actual text in Indonesian ("id") or English ("en")
         const filteredReviews = parsedReviews.filter(review =>
-            review.review?.text?.trim() && // Exclude reviews without text
+            review.review?.text?.trim() &&
             (review.review?.language === "id" || review.review?.language === "en")
         );
         
-        // If no valid reviews are found, return an empty array
         if (filteredReviews.length === 0) {
             return [];
         }
         
-        // Transform and clean the reviews (without including the language field)
         return filteredReviews.map(review => ({
             id: review.review_id,
             review: cleanText(review.review.text),
@@ -57,23 +53,20 @@ export async function saveReviewsToDatabase(reviews) {
     
     for (const reviewData of reviews) {
         try {
-            // Check if review already exists
             const existingReview = await Review.findByPk(reviewData.id);
             
             if (existingReview) {
-                // Update existing review
                 await existingReview.update({
                     review: reviewData.review,
                     time_published: reviewData.time_published,
                     source: reviewData.source,
-                    sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment // Reset sentiment if review text changes
+                    sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment
                 });
                 updatedCount++;
             } else {
-                // Create new review
                 await Review.create({
                     ...reviewData,
-                    sentiment: null // Initialize sentiment as null
+                    sentiment: null
                 });
                 savedCount++;
             }
