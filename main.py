@@ -54,10 +54,10 @@ async def translate_text(text: str, target_language="id") -> str:
 # Async function: Preprocess text
 async def preprocess_text(text: str) -> str:
     text = demoji.replace(text, "")  # Remove emojis
-    text = await translate_text(text)
     text = text.lower()
     text = re.sub(r'@\w+|http\S+|[^a-zA-Z ]', ' ', text)
     text = normalize_text(text)  # Apply normalization
+    text = await translate_text(text)
     tokens = [stemmer.stem(token) for token in nltk.word_tokenize(text)]
     return ' '.join(tokens)
 
