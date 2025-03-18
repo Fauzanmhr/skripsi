@@ -16,7 +16,7 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 app = FastAPI()
 
 # Load NLP resources
-nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 stemmer = StemmerFactory().create_stemmer()
 
 # Load normalization dictionary (formerly slang dictionary)
