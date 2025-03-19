@@ -16,8 +16,37 @@
     </div>
     
     <div class="card shadow-sm mb-5">
-      <div class="card-header text-center text-black">
-        <h5 class="mb-0">Review List</h5>
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Review List</h5>
+          
+          <!-- Filter Controls-->
+          <div class="d-flex gap-2">
+            <form id="filterForm" class="d-flex gap-2" method="GET">
+              <input type="hidden" name="page" value="1">
+
+              <!-- Sentiment Filter -->
+              <select name="sentiment" class="form-select form-select-sm" aria-label="Filter by sentiment">
+                <option value="">All Sentiments</option>
+                <% filterOptions.sentiments.forEach(sentiment => { %>
+                  <option value="<%= sentiment %>" <%= filters.sentiment === sentiment ? 'selected' : '' %>><%= sentiment %></option>
+                <% }); %>
+                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Pending</option>
+              </select>
+              
+              <!-- Source Filter -->
+              <select name="source" class="form-select form-select-sm" aria-label="Filter by source">
+                <option value="">All Sources</option>
+                <% filterOptions.sources.forEach(source => { %>
+                  <option value="<%= source %>" <%= filters.source === source ? 'selected' : '' %>><%= source %></option>
+                <% }); %>
+              </select>
+              
+              <!-- Reset Filters -->
+              <a href="/reviews" class="btn btn-sm btn-secondary">Reset</a>
+            </form>
+          </div>
+        </div>
       </div>
       <div class="card-body p-4">
         <div class="table-responsive" style="height: 600px; overflow-y: auto;">
@@ -107,19 +136,23 @@
           </nav>
         <% } %>
         
-        <!-- Pagination summary -->
+        <!-- Pagination -->
         <p class="text-center mt-3 text-muted">
           Showing <%= (pagination.page - 1) * pagination.limit + 1 %> - 
           <%= Math.min(pagination.page * pagination.limit, pagination.totalCount) %> 
           of <%= pagination.totalCount %> reviews
+          <% if (filters.source || filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending')) { %>
+            (Filtered: 
+            <% if (filters.source) { %>Source: <%= filters.source %><% } %>
+            <% if (filters.source && (filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending'))) { %>, <% } %>
+            <% if (filters.sentiment === 'pending') { %>Pending<% } else if (filters.sentiment) { %>Sentiment: <%= filters.sentiment %><% } %>)
+          <% } %>
         </p>
       </div>
     </div>
   </div>
 </div>
-
 <%- include('./partials/footer') %>
-
 <!-- Scripts -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -129,6 +162,9 @@
     // Set up crawl buttons
     setupCrawlButton();
     setupSheetsButton();
+    
+    // Handle filter
+    setupFilterHandlers();
   });
   
   // Initialize tooltips with HTML support
@@ -152,6 +188,16 @@
   function setupSheetsButton() {
     document.getElementById('sheetsButton').addEventListener('click', async function() {
       await performCrawl(this, 'sheetsSpinner', '/reviews/crawl-sheets');
+    });
+  }
+  
+  // filter handlers
+  function setupFilterHandlers() {
+    const filterSelects = document.querySelectorAll('#filterForm select');
+    filterSelects.forEach(select => {
+      select.addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+      });
     });
   }
   
@@ -182,7 +228,6 @@
       console.error('Operation failed:', error);
       alert('Failed to perform operation. Please try again.');
     } finally {
-      // Re-enable button and hide spinner
       button.disabled = false;
       spinner.classList.add('d-none');
     }
