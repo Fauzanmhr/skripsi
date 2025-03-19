@@ -48,7 +48,7 @@ export async function saveReviewsToDatabase(reviews) {
   for (const reviewData of reviews) {
     try {
       const existingReview = await Review.findByPk(reviewData.id);
-      
+      // Update existing review if found
       if (existingReview) {
         await existingReview.update({
           review: reviewData.review,

@@ -56,7 +56,7 @@ function formatTimestamp(timestamp) {
 export function transformSheetData(parsedData) {
   return parsedData
     .map(row => {
-      const reviewId = row.id?.trim() || `form-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      const reviewId = row.id?.trim();
       const isFirstVisit = typeof row.first_visit === 'string' && 
                           (row.first_visit.includes('Ya') || row.first_visit.includes('pertama'));
       const timePublished = formatTimestamp(row.timestamp);
