@@ -8,21 +8,10 @@ import asyncio
 import pandas as pd
 import uvicorn
 from deep_translator import GoogleTranslator
-import demoji
-from nltk.corpus import stopwords
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
 # Initialize FastAPI app
 app = FastAPI()
-
-# Load NLP resources
-nltk.download('punkt_tab', quiet=True)
-stemmer = StemmerFactory().create_stemmer()
-
-# Load normalization dictionary (formerly slang dictionary)
-normalize_dict_path = "./normal.csv"
-normalize_dict = pd.read_csv(normalize_dict_path)
-normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
 
 # Load pre-trained BERT model and tokenizer
 MODEL_PATH = "./saved_model"
@@ -33,6 +22,14 @@ model.eval()
 # Sentiment label mapping
 LABEL_MAPPING = {0: 'netral', 1: 'positif', 2: 'negatif', 3: 'puas', 4: 'kecewa'}
 
+# Load NLP resources
+nltk.download('punkt_tab', quiet=True)
+stemmer = StemmerFactory().create_stemmer()
+
+# Load normalization dictionary (formerly slang dictionary)
+normalize_dict_path = "./normal.csv"
+normalize_dict = pd.read_csv(normalize_dict_path)
+normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
 
 # Helper function: Normalize words
 def normalize_text(text: str) -> str:
@@ -52,15 +49,14 @@ async def translate_text(text: str, target_language="id") -> str:
 
 
 # Async function: Preprocess text
-async def preprocess_text(text: str) -> str:
-    text = demoji.replace(text, "")  # Remove emojis
-    text = text.lower()
-    text = re.sub(r'@\w+|http\S+|[^a-zA-Z ]', ' ', text)
-    text = normalize_text(text)  # Apply normalization
+async def preprocess_text(text):
+    text = str(text).lower().strip()  # Convert to lowercase & remove extra spaces
+    text = re.sub(r'@\w+|http\S+', ' ', text)  # Remove mentions & URLs
+    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Keep only letters and spaces
+    text = normalize_text(text)  # Normalize slang/abbreviations
     text = await translate_text(text)
-    tokens = [stemmer.stem(token) for token in nltk.word_tokenize(text)]
-    return ' '.join(tokens)
-
+    tokens = [stemmer.stem(token) for token in nltk.word_tokenize(text)]  # Tokenize & stem
+    return ' '.join(tokens)  # Join words back into a sentence
 
 # Request model
 class TextInput(BaseModel):
