@@ -13,10 +13,15 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 # Initialize FastAPI app
 app = FastAPI()
 
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 # Load pre-trained BERT model and tokenizer
 MODEL_PATH = "./saved_model"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
+model.to(device)  # Move model to CUDA if available
 model.eval()
 
 # Sentiment label mapping
@@ -35,7 +40,6 @@ normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
 def normalize_text(text: str) -> str:
     return ' '.join([normalize_dict.get(word, word) for word in text.split()])
 
-
 # Async function: Translate English to Indonesian with retry
 async def translate_text(text: str, target_language="id") -> str:
     retries = 3
@@ -46,7 +50,6 @@ async def translate_text(text: str, target_language="id") -> str:
             print(f"Translation failed: {e}. Retrying...")
             await asyncio.sleep(2)
     return text  # Return original text if translation fails
-
 
 # Async function: Preprocess text
 async def preprocess_text(text):
@@ -62,23 +65,21 @@ async def preprocess_text(text):
 class TextInput(BaseModel):
     text: str
 
-
 @app.get("/")
 def root():
     return {"message": "API is running"}
 
-
 @app.post("/predict")
 async def predict_sentiment(input_text: TextInput):
     processed_text = await preprocess_text(input_text.text)
-    inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=128)
+    inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=256)
+    inputs = {key: value.to(device) for key, value in inputs.items()}
 
     with torch.no_grad():
         outputs = model(**inputs)
 
     prediction = torch.argmax(outputs.logits, dim=-1).item()
     return {"sentiment": LABEL_MAPPING[prediction]}
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
