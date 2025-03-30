@@ -1,14 +1,16 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
+import asyncio
+import uvicorn
+import pandas as pd
 import re
 import nltk
-import asyncio
-import pandas as pd
-import uvicorn
+import sastrawi
+import emoji
+from fastapi import FastAPI
+from pydantic import BaseModel
+from transformers import BertTokenizer, BertForSequenceClassification
 from deep_translator import GoogleTranslator
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from nltk.tokenize import word_tokenize
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -29,16 +31,12 @@ LABEL_MAPPING = {0: 'netral', 1: 'positif', 2: 'negatif', 3: 'puas', 4: 'kecewa'
 
 # Load NLP resources
 nltk.download('punkt_tab', quiet=True)
-stemmer = StemmerFactory().create_stemmer()
+stemmer = sastrawi.Stemmer()
 
 # Load normalization dictionary (formerly slang dictionary)
 normalize_dict_path = "./normal.csv"
 normalize_dict = pd.read_csv(normalize_dict_path)
 normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
-
-# Helper function: Normalize words
-def normalize_text(text: str) -> str:
-    return ' '.join([normalize_dict.get(word, word) for word in text.split()])
 
 # Async function: Translate English to Indonesian with retry
 async def translate_text(text: str, target_language="id") -> str:
@@ -51,15 +49,21 @@ async def translate_text(text: str, target_language="id") -> str:
             await asyncio.sleep(2)
     return text  # Return original text if translation fails
 
-# Async function: Preprocess text
+# Preprocessing steps
 async def preprocess_text(text):
-    text = str(text).lower().strip()  # Convert to lowercase & remove extra spaces
-    text = re.sub(r'@\w+|http\S+', ' ', text)  # Remove mentions & URLs
-    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Keep only letters and spaces
-    text = normalize_text(text)  # Normalize slang/abbreviations
+    text = re.sub(r'(.)\1+', r'\1', text)
     text = await translate_text(text)
-    tokens = [stemmer.stem(token) for token in nltk.word_tokenize(text)]  # Tokenize & stem
-    return ' '.join(tokens)  # Join words back into a sentence
+    text = text.lower().strip()
+    text = emoji.demojize(text, language='id')
+    text = re.sub(r'(@\w+|http\S+)', ' ', text)
+    text = re.sub(r'[^a-zA-Z ]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    tokens = word_tokenize(text)
+    tokens = [normalize_dict.get(word, word) for word in tokens]
+    tokens = [stemmer.stem(token) for token in tokens]
+    tokens = [re.sub(r'(ku|mu|nya)$', '', word) for word in tokens]
+    tokens = [word for word in tokens if word]
+    return ' '.join(tokens)
 
 # Request model
 class TextInput(BaseModel):
