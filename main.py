@@ -87,7 +87,7 @@ async def translate(text: str) -> str:
 
 # Preprocessing pipeline
 async def preprocess_text(text):
-    text = await translate_with_retry(text)  # Uses DeepL
+    text = await translate(text)  # Uses DeepL
     text = text.lower().strip()
     text = emoji.demojize(text, language='id')
     text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Remove mentions & URLs
