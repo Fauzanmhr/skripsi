@@ -1,50 +1,42 @@
 <%- include('partials/header', { title: title, page: page }) %>
 <div class="flex-wrapper">
   <div class="container content">
-    
-    <!-- Date Filter -->
-    <div class="row mt-4 mb-4 w-100">
-      <div class="mx-auto">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-              Filter by Date Range
-              <% if (startDate !== null || endDate !== null) { %>
-                <span class="badge bg-info ms-2">Filter Active</span>
-              <% } %>
-            </h5>
-          </div>
-          <div class="card-body">
-            <form id="dateRangeForm" class="row g-3">
-              <div class="col-md-4">
-                <label for="startDate" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="startDate" name="startDate" 
-                       value="<%= startDate || '' %>" 
-                       min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
-              </div>
-              <div class="col-md-4">
-                <label for="endDate" class="form-label">End Date</label>
-                <input type="date" class="form-control" id="endDate" name="endDate" 
-                       value="<%= endDate || '' %>" 
-                       min="<%= dbMinDate %>" max="<%= dbMaxDate %>">
-              </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary me-2">Filter</button>
-                <% if (startDate !== null || endDate !== null) { %>
-                  <a href="/" class="btn btn-secondary">Reset</a>
-                <% } else { %>
-                  <button type="button" class="btn btn-secondary invisible">Reset</button>
-                <% } %>
-              </div>
-            </form>
+    <!-- Sentiment Cards Row -->
+    <div class="row w-100 justify-content-center mt-4">
+      <!-- Total Data Card -->
+      <div class="col-md-2 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted">Total Reviews</h6>
+            <h3 class="card-title" id="totalReviews">0</h3>
+            <div class="progress mt-2" style="height: 4px;">
+              <div class="progress-bar bg-secondary" style="width: 100%"></div>
+            </div>
           </div>
         </div>
       </div>
+      
+      <!-- Sentiment Cards -->
+      <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
+      <% sentimentCards.forEach(sentiment => { %>
+        <div class="col-md-2 mb-4">
+          <div class="card h-100">
+            <div class="card-body text-center">
+              <h6 class="card-subtitle mb-2 text-muted"><%= sentiment.charAt(0).toUpperCase() + sentiment.slice(1) %></h6>
+              <h3 class="card-title" id="<%= sentiment %>Count">0</h3>
+              <div class="progress mt-2" style="height: 4px;">
+                <div class="progress-bar" id="<%= sentiment %>Progress" 
+                     style="width: 0%; background-color: <%= colors[sentiment] %>"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
     </div>
     
-    <!-- Chart and Stats -->
+    <!-- Chart Row -->
     <div class="row w-100 justify-content-center">
-      <div class="col-md-8 mb-4">
+      <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header">
             <h5 class="card-title mb-0">Sentiment Distribution</h5>
@@ -56,24 +48,19 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4 mb-4">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Sentiment Breakdown</h5>
-          </div>
-          <div class="card-body">
-            <ul class="list-group" id="sentimentBreakdown"></ul>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- Sentiment by Time Chart -->
     <div class="row w-100 mb-4">
       <div class="col-md-12">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Sentiment Trends Over Time</h5>
+            <div class="btn-group" role="group" aria-label="Time period selector">
+              <button type="button" class="btn btn-outline-primary active" data-period="week">Week</button>
+              <button type="button" class="btn btn-outline-primary" data-period="month">Month</button>
+              <button type="button" class="btn btn-outline-primary" data-period="year">Year</button>
+            </div>
           </div>
           <div class="card-body">
             <div class="chart-container" style="position: relative; width: 100%; height: 350px;">
@@ -85,15 +72,16 @@
     </div>
   </div>
 </div>
-
 <%- include('./partials/footer') %>
-
 <!-- Scripts -->
 <script src="/js/chart.umd.js"></script>
 <script>
   // Get data from server
   const stats = <%- stats %>;
   const timeSeriesData = <%- timeSeriesData %>;
+  const weeklyData = <%- weeklyData %>;
+  const monthlyData = <%- monthlyData %>;
+  const yearlyData = <%- yearlyData %>;
   
   // Color mapping for sentiment categories
   const colors = {
@@ -104,23 +92,47 @@
     'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
   };
   
-  // Create charts and breakdown
+  let timeSeriesChart;
+  
+  // Create charts and update cards
   document.addEventListener('DOMContentLoaded', function() {
     const labels = stats.labels;
     const data = labels.map(label => stats.counts[label]);
     
+    // Update sentiment cards
+    updateSentimentCards(labels, data);
+    
     // Create sentiment chart
     createSentimentChart(labels, data);
     
-    // Create time series chart
-    createTimeSeriesChart(labels);
+    // Create time series chart (default to weekly view)
+    createTimeSeriesChart(labels, 'week');
     
-    // Create breakdown list
-    createBreakdownList(labels, data);
-    
-    // Setup date validation
-    setupDateValidation();
+    // Setup time period buttons
+    setupTimePeriodButtons();
   });
+  
+  // Update sentiment cards with data
+  function updateSentimentCards(labels, data) {
+    const totalReviews = data.reduce((sum, current) => sum + current, 0);
+    
+    // Update total reviews card
+    document.getElementById('totalReviews').textContent = totalReviews;
+    
+    // Update each sentiment card
+    labels.forEach((label, index) => {
+      const count = data[index];
+      const percentage = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+      
+      // Update count
+      document.getElementById(`${label}Count`).textContent = count;
+      
+      // Update progress bar
+      const progressBar = document.getElementById(`${label}Progress`);
+      progressBar.style.width = `${percentage}%`;
+      progressBar.setAttribute('aria-valuenow', percentage);
+    });
+  }
   
   // Create sentiment distribution chart
   function createSentimentChart(labels, data) {
@@ -163,11 +175,27 @@
   }
   
   // Create time series chart
-  function createTimeSeriesChart(labels) {
+  function createTimeSeriesChart(labels, period = 'week') {
+    // Choose the right data based on period
+    let chartData;
+    switch(period) {
+      case 'week':
+        chartData = weeklyData;
+        break;
+      case 'month':
+        chartData = monthlyData;
+        break;
+      case 'year':
+        chartData = yearlyData;
+        break;
+      default:
+        chartData = weeklyData;
+    }
+    
     const datasets = labels.map(sentiment => {
       return {
         label: sentiment.charAt(0).toUpperCase() + sentiment.slice(1),
-        data: timeSeriesData.series[sentiment],
+        data: chartData.series[sentiment],
         borderColor: colors[sentiment].replace('0.8', '1'),
         backgroundColor: colors[sentiment].replace('0.8', '0.1'),
         borderWidth: 2,
@@ -177,10 +205,16 @@
     });
     
     const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
-    new Chart(timeSeriesCtx, {
+    
+    // Destroy existing chart if it exists
+    if (timeSeriesChart) {
+      timeSeriesChart.destroy();
+    }
+    
+    timeSeriesChart = new Chart(timeSeriesCtx, {
       type: 'line',
       data: {
-        labels: timeSeriesData.dates,
+        labels: chartData.labels,
         datasets: datasets
       },
       options: {
@@ -220,46 +254,22 @@
     });
   }
   
-  // Create sentiment breakdown list
-  function createBreakdownList(labels, data) {
-    const breakdownList = document.getElementById('sentimentBreakdown');
-    const totalReviews = data.reduce((sum, current) => sum + current, 0);
+  // Setup time period buttons
+  function setupTimePeriodButtons() {
+    const buttons = document.querySelectorAll('[data-period]');
     
-    breakdownList.innerHTML = '';
-    
-    labels.forEach((label, index) => {
-      const count = data[index];
-      const percentage = totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(1) : 0;
-      
-      const listItem = document.createElement('li');
-      listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-      
-      const badgeSpan = document.createElement('span');
-      badgeSpan.className = 'badge bg-primary rounded-pill';
-      badgeSpan.textContent = `${count} (${percentage}%)`;
-      
-      listItem.innerHTML = `
-        <div class="d-flex align-items-center">
-          <span class="me-2" style="width: 16px; height: 16px; background-color: ${colors[label]}; border-radius: 50%; display: inline-block;"></span>
-          ${label.charAt(0).toUpperCase() + label.slice(1)}
-        </div>
-      `;
-      
-      listItem.appendChild(badgeSpan);
-      breakdownList.appendChild(listItem);
-    });
-  }
-  
-  // Setup date validation
-  function setupDateValidation() {
-    document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      
-      if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-        e.preventDefault();
-        alert('Start date cannot be after end date');
-      }
+    buttons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Remove active class from all buttons
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        // Add active class to clicked button
+        this.classList.add('active');
+        
+        // Update chart
+        const period = this.getAttribute('data-period');
+        createTimeSeriesChart(stats.labels, period);
+      });
     });
   }
 </script>

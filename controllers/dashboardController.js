@@ -3,64 +3,92 @@ import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
 import moment from 'moment';
 
-// Format date for HTML input
-const formatDate = date => date ? new Date(date).toISOString().split('T')[0] : '';
+// Color mapping for sentiment categories
+const colors = {
+  'positif': 'rgba(75, 192, 192, 0.8)',  // Green
+  'negatif': 'rgba(255, 99, 132, 0.8)',  // Red
+  'netral': 'rgba(201, 203, 207, 0.8)',  // Gray
+  'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
+  'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
+};
 
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {
   try {
-    const { startDate, endDate } = req.query;
-    
-    // Get min and max dates from the database
-    const [dateRange] = await Review.findAll({
-      attributes: [
-        [sequelize.fn('MIN', sequelize.col('time_published')), 'minDate'],
-        [sequelize.fn('MAX', sequelize.col('time_published')), 'maxDate']
-      ],
-      raw: true
-    });
-    
-    const dbMinDate = formatDate(dateRange.minDate);
-    const dbMaxDate = formatDate(dateRange.maxDate);
-    
-    // Set date range filter if provided
-    const dateFilter = {};
-    if (startDate && endDate) {
-      dateFilter.time_published = { 
-        [Op.between]: [new Date(startDate), new Date(endDate)] 
-      };
-    }
-    
-    // Get sentiment stats
+    // Get sentiment stats for all data
     const sentimentData = await Review.findAll({
       attributes: [
         'sentiment',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
       where: {
-        sentiment: { [Op.not]: null },
-        ...dateFilter
+        sentiment: { [Op.not]: null }
       },
       group: ['sentiment'],
       raw: true
     });
     
-    // Get sentiment by time (grouped by day)
-    const sentimentByTime = await Review.findAll({
+    // Get sentiment by day
+    const sentimentByDay = await Review.findAll({
       attributes: [
         [sequelize.fn('DATE', sequelize.col('time_published')), 'date'],
         'sentiment',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
       ],
       where: {
-        sentiment: { [Op.not]: null },
-        ...dateFilter
+        sentiment: { [Op.not]: null }
       },
-      group: ['date', 'sentiment'],
+      group: [sequelize.fn('DATE', sequelize.col('time_published')), 'sentiment'],
       order: [[sequelize.fn('DATE', sequelize.col('time_published')), 'ASC']],
       raw: true
     });
     
+    // Get sentiment by week
+    const sentimentByWeek = await Review.findAll({
+      attributes: [
+        [sequelize.fn('YEARWEEK', sequelize.col('time_published'), 1), 'yearweek'],
+        [sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%u'), 'week_label'],
+        'sentiment',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        sentiment: { [Op.not]: null }
+      },
+      group: ['yearweek', 'sentiment'],
+      order: [[sequelize.fn('YEARWEEK', sequelize.col('time_published'), 1), 'ASC']],
+      raw: true
+    });
+    
+    // Get sentiment by month
+    const sentimentByMonth = await Review.findAll({
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'), 'month'],
+        'sentiment',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        sentiment: { [Op.not]: null }
+      },
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'), 'sentiment'],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'), 'ASC']],
+      raw: true
+    });
+    
+    // Get sentiment by year
+    const sentimentByYear = await Review.findAll({
+      attributes: [
+        [sequelize.fn('YEAR', sequelize.col('time_published')), 'year'],
+        'sentiment',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        sentiment: { [Op.not]: null }
+      },
+      group: [sequelize.fn('YEAR', sequelize.col('time_published')), 'sentiment'],
+      order: [[sequelize.fn('YEAR', sequelize.col('time_published')), 'ASC']],
+      raw: true
+    });
+
     // Process data for charts
     const sentimentLabels = ['positif', 'negatif', 'netral', 'puas', 'kecewa'];
     const counts = Object.fromEntries(sentimentLabels.map(label => [label, 0]));
@@ -68,25 +96,91 @@ export async function renderDashboard(req, res) {
     // Fill in actual counts
     sentimentData.forEach(item => counts[item.sentiment] = parseInt(item.count));
     
-    // Process time series data
-    const dates = [...new Set(sentimentByTime.map(item => item.date))].sort();
-    const timeSeriesData = {};
+    // Process time series data (daily)
+    const dates = [...new Set(sentimentByDay.map(item => item.date))].sort();
+    const dailyData = {};
     
-    // Initialize the time series data structure
+    // Initialize the daily data structure
     sentimentLabels.forEach(sentiment => {
-      timeSeriesData[sentiment] = dates.map(() => 0);
+      dailyData[sentiment] = dates.map(() => 0);
     });
     
-    // Fill in the data
-    sentimentByTime.forEach(item => {
+    // Fill in the daily data
+    sentimentByDay.forEach(item => {
       const dateIndex = dates.indexOf(item.date);
       if (dateIndex !== -1 && sentimentLabels.includes(item.sentiment)) {
-        timeSeriesData[item.sentiment][dateIndex] = parseInt(item.count);
+        dailyData[item.sentiment][dateIndex] = parseInt(item.count);
       }
     });
     
     // Format dates for display
     const formattedDates = dates.map(date => moment(date).format('MMM DD, YYYY'));
+    
+    // Process weekly data
+    const weeks = [...new Set(sentimentByWeek.map(item => item.week_label))].sort();
+    const weeklyData = {};
+    
+    // Initialize the weekly data structure
+    sentimentLabels.forEach(sentiment => {
+      weeklyData[sentiment] = weeks.map(() => 0);
+    });
+    
+    // Fill in the weekly data
+    sentimentByWeek.forEach(item => {
+      const weekIndex = weeks.indexOf(item.week_label);
+      if (weekIndex !== -1 && sentimentLabels.includes(item.sentiment)) {
+        weeklyData[item.sentiment][weekIndex] = parseInt(item.count);
+      }
+    });
+    
+    // Format weeks for display
+    const formattedWeeks = weeks.map(week => {
+      const [year, weekNum] = week.split('-');
+      return `Week ${weekNum}, ${year}`;
+    });
+    
+    // Process monthly data
+    const months = [...new Set(sentimentByMonth.map(item => item.month))].sort();
+    const monthlyData = {};
+    
+    // Initialize the monthly data structure
+    sentimentLabels.forEach(sentiment => {
+      monthlyData[sentiment] = months.map(() => 0);
+    });
+    
+    // Fill in the monthly data
+    sentimentByMonth.forEach(item => {
+      const monthIndex = months.indexOf(item.month);
+      if (monthIndex !== -1 && sentimentLabels.includes(item.sentiment)) {
+        monthlyData[item.sentiment][monthIndex] = parseInt(item.count);
+      }
+    });
+    
+    // Format months for display
+    const formattedMonths = months.map(month => {
+      const [year, monthNum] = month.split('-');
+      return moment(`${year}-${monthNum}-01`).format('MMM YYYY');
+    });
+    
+    // Process yearly data
+    const years = [...new Set(sentimentByYear.map(item => item.year))].sort();
+    const yearlyData = {};
+    
+    // Initialize the yearly data structure
+    sentimentLabels.forEach(sentiment => {
+      yearlyData[sentiment] = years.map(() => 0);
+    });
+    
+    // Fill in the yearly data
+    sentimentByYear.forEach(item => {
+      const yearIndex = years.indexOf(item.year);
+      if (yearIndex !== -1 && sentimentLabels.includes(item.sentiment)) {
+        yearlyData[item.sentiment][yearIndex] = parseInt(item.count);
+      }
+    });
+    
+    // Format years for display (no formatting needed)
+    const formattedYears = years;
     
     // Render the dashboard
     res.render('dashboard', {
@@ -94,12 +188,21 @@ export async function renderDashboard(req, res) {
       stats: JSON.stringify({ labels: sentimentLabels, counts }),
       timeSeriesData: JSON.stringify({
         dates: formattedDates,
-        series: timeSeriesData
+        series: dailyData
       }),
-      startDate: startDate || null,
-      endDate: endDate || null,
-      dbMinDate,
-      dbMaxDate,
+      weeklyData: JSON.stringify({
+        labels: formattedWeeks,
+        series: weeklyData
+      }),
+      monthlyData: JSON.stringify({
+        labels: formattedMonths,
+        series: monthlyData
+      }),
+      yearlyData: JSON.stringify({
+        labels: formattedYears,
+        series: yearlyData
+      }),
+      colors: colors,  // Pass colors to the view
       page: 'dashboard'
     });
   } catch (error) {
