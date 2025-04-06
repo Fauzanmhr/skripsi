@@ -3,6 +3,8 @@ import ReviewExtra from '../models/review_extra.js';
 import { crawlAndSaveReviews } from '../services/googleMapsService.js';
 import { processGoogleSheetsData } from '../services/googleSheetsService.js';
 import { Op, Sequelize } from 'sequelize';
+import ExcelJS from 'exceljs';
+import { format } from 'date-fns';
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -150,6 +152,97 @@ export async function handleSheetsCrawlRequest(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to process Google Sheets data',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+}
+
+// Controller to export reviews to Excel
+export async function exportReviewsToExcel(req, res) {
+  try {
+    // Extract filter parameters from query
+    const { source, sentiment, startDate, endDate } = req.query;
+    
+    // Build where clause
+    const where = {};
+    
+    if (source) {
+      where.source = source;
+    }
+    
+    if (sentiment === 'pending') {
+      where.sentiment = null;
+    } else if (sentiment) {
+      where.sentiment = sentiment;
+    }
+    
+    if (startDate || endDate) {
+      where.time_published = {};
+      if (startDate) {
+        where.time_published[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        where.time_published[Op.lte] = new Date(endDate);
+      }
+    }
+    
+    // Get all reviews with applied filters
+    const reviews = await Review.findAll({
+      where,
+      order: [['time_published', 'DESC']]
+    });
+    
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Reviews');
+    
+    // Define columns
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Review', key: 'review', width: 50 },
+      { header: 'Sentiment', key: 'sentiment', width: 15 },
+      { header: 'Source', key: 'source', width: 15 }
+    ];
+    
+    // Add rows
+    reviews.forEach(review => {
+      worksheet.addRow({
+        date: format(new Date(review.time_published), 'yyyy-MM-dd'),
+        review: review.review,
+        sentiment: review.sentiment || 'Pending',
+        source: review.source
+      });
+    });
+    
+    // Style header row
+    worksheet.getRow(1).eachCell(cell => {
+      cell.font = { bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD3D3D3' }
+      };
+    });
+    
+    // Set response headers for file download
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=reviews_export.xlsx'
+    );
+    
+    // Write workbook to response
+    await workbook.xlsx.write(res);
+    res.end();
+    
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export reviews',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }

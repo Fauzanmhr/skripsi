@@ -1,5 +1,10 @@
 import express from 'express';
-import { renderReviewsPage, handleCrawlRequest, handleSheetsCrawlRequest } from '../controllers/reviewController.js';
+import { 
+  renderReviewsPage, 
+  handleCrawlRequest, 
+  handleSheetsCrawlRequest,
+  exportReviewsToExcel 
+} from '../controllers/reviewController.js';
 
 const router = express.Router();
 
@@ -11,5 +16,8 @@ router.post('/crawl', handleCrawlRequest);
 
 // Route for triggering Google Sheets crawling
 router.post('/crawl-sheets', handleSheetsCrawlRequest);
+
+// Route for exporting reviews to Excel
+router.get('/export', exportReviewsToExcel);
 
 export default router;
