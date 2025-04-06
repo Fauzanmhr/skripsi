@@ -56,10 +56,26 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Sentiment Trends Over Time</h5>
-            <div class="btn-group" role="group" aria-label="Time period selector">
-              <button type="button" class="btn btn-outline-primary active" data-period="week">Week</button>
-              <button type="button" class="btn btn-outline-primary" data-period="month">Month</button>
-              <button type="button" class="btn btn-outline-primary" data-period="year">Year</button>
+            <div class="d-flex align-items-center">
+              <div class="btn-group me-3" role="group" aria-label="Time period selector">
+                <button type="button" class="btn btn-outline-primary active" data-period="week">Week</button>
+                <button type="button" class="btn btn-outline-primary" data-period="month">Month</button>
+                <button type="button" class="btn btn-outline-primary" data-period="year">Year</button>
+              </div>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span id="selectedYearLabel"><%= latestYear %></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="yearDropdown" id="yearDropdownMenu">
+                  <% availableYears.forEach(year => { %>
+                    <li>
+                      <a class="dropdown-item <%= year === latestYear ? 'active' : '' %>" href="#" data-year="<%= year %>">
+                        <%= year %>
+                      </a>
+                    </li>
+                  <% }); %>
+                </ul>
+              </div>
             </div>
           </div>
           <div class="card-body">
@@ -77,12 +93,14 @@
 <script src="/js/chart.umd.js"></script>
 <script>
   // Get data from server
-  const stats = <%- stats %>;
-  const timeSeriesData = <%- timeSeriesData %>;
-  const weeklyData = <%- weeklyData %>;
-  const monthlyData = <%- monthlyData %>;
-  const yearlyData = <%- yearlyData %>;
-  
+  const stats = <%- JSON.stringify(stats) %>;
+  const timeSeriesData = <%- JSON.stringify(timeSeriesData) %>;
+  const weeklyData = <%- JSON.stringify(weeklyData) %>;
+  const monthlyData = <%- JSON.stringify(monthlyData) %>;
+  const yearlyData = <%- JSON.stringify(yearlyData) %>;
+  const availableYears = <%- JSON.stringify(availableYears) %>;
+  const latestYear = "<%= latestYear %>";
+
   // Color mapping for sentiment categories
   const colors = {
     'positif': 'rgba(75, 192, 192, 0.8)',  // Green
@@ -91,9 +109,11 @@
     'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
     'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
   };
-  
+
   let timeSeriesChart;
-  
+  let currentPeriod = 'week';
+  let currentYear = latestYear;
+
   // Create charts and update cards
   document.addEventListener('DOMContentLoaded', function() {
     const labels = stats.labels;
@@ -105,13 +125,16 @@
     // Create sentiment chart
     createSentimentChart(labels, data);
     
-    // Create time series chart (default to weekly view)
-    createTimeSeriesChart(labels, 'week');
+    // Setup year dropdown
+    setupYearDropdown();
+    
+    // Create time series chart (default to weekly view of latest year)
+    createTimeSeriesChart(labels, currentPeriod, currentYear);
     
     // Setup time period buttons
     setupTimePeriodButtons();
   });
-  
+
   // Update sentiment cards with data
   function updateSentimentCards(labels, data) {
     const totalReviews = data.reduce((sum, current) => sum + current, 0);
@@ -133,7 +156,7 @@
       progressBar.setAttribute('aria-valuenow', percentage);
     });
   }
-  
+
   // Create sentiment distribution chart
   function createSentimentChart(labels, data) {
     const backgroundColors = labels.map(label => colors[label]);
@@ -173,9 +196,37 @@
       }
     });
   }
-  
+
+  // Setup year dropdown
+  function setupYearDropdown() {
+    const yearDropdownItems = document.querySelectorAll('#yearDropdownMenu .dropdown-item');
+    const selectedYearLabel = document.getElementById('selectedYearLabel');
+    
+    yearDropdownItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active class from all items
+        yearDropdownItems.forEach(i => i.classList.remove('active'));
+        
+        // Add active class to clicked item
+        this.classList.add('active');
+        
+        // Update selected year and label
+        currentYear = this.dataset.year;
+        selectedYearLabel.textContent = currentYear;
+        
+        // Refresh chart
+        createTimeSeriesChart(stats.labels, currentPeriod, currentYear);
+      });
+    });
+  }
+
   // Create time series chart
-  function createTimeSeriesChart(labels, period = 'week') {
+  function createTimeSeriesChart(labels, period = 'week', year = null) {
+    currentPeriod = period;
+    if (year) currentYear = year;
+    
     // Choose the right data based on period
     let chartData;
     switch(period) {
@@ -190,6 +241,30 @@
         break;
       default:
         chartData = weeklyData;
+    }
+    
+    // Filter data by year if needed (for week and month views)
+    if (period !== 'year' && year) {
+      const filteredLabels = [];
+      const filteredSeries = {};
+      
+      labels.forEach(sentiment => {
+        filteredSeries[sentiment] = [];
+      });
+      
+      chartData.labels.forEach((label, index) => {
+        if (label.includes(year)) {
+          filteredLabels.push(label);
+          labels.forEach(sentiment => {
+            filteredSeries[sentiment].push(chartData.series[sentiment][index]);
+          });
+        }
+      });
+      
+      chartData = {
+        labels: filteredLabels,
+        series: filteredSeries
+      };
     }
     
     const datasets = labels.map(sentiment => {
@@ -253,7 +328,7 @@
       }
     });
   }
-  
+
   // Setup time period buttons
   function setupTimePeriodButtons() {
     const buttons = document.querySelectorAll('[data-period]');
@@ -268,7 +343,7 @@
         
         // Update chart
         const period = this.getAttribute('data-period');
-        createTimeSeriesChart(stats.labels, period);
+        createTimeSeriesChart(stats.labels, period, currentYear);
       });
     });
   }

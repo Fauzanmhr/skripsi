@@ -181,28 +181,31 @@ export async function renderDashboard(req, res) {
     
     // Format years for display (no formatting needed)
     const formattedYears = years;
+    const latestYear = formattedYears.length > 0 ? formattedYears[formattedYears.length - 1] : new Date().getFullYear();
     
     // Render the dashboard
     res.render('dashboard', {
       title: 'Sentiment Analysis Dashboard',
-      stats: JSON.stringify({ labels: sentimentLabels, counts }),
-      timeSeriesData: JSON.stringify({
+      stats: { labels: sentimentLabels, counts },
+      timeSeriesData: {
         dates: formattedDates,
         series: dailyData
-      }),
-      weeklyData: JSON.stringify({
+      },
+      weeklyData: {
         labels: formattedWeeks,
         series: weeklyData
-      }),
-      monthlyData: JSON.stringify({
+      },
+      monthlyData: {
         labels: formattedMonths,
         series: monthlyData
-      }),
-      yearlyData: JSON.stringify({
+      },
+      yearlyData: {
         labels: formattedYears,
         series: yearlyData
-      }),
-      colors: colors,  // Pass colors to the view
+      },
+      availableYears: formattedYears,
+      latestYear: latestYear,
+      colors: colors,
       page: 'dashboard'
     });
   } catch (error) {
