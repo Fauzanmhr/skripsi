@@ -77,7 +77,7 @@ async def translate(text: str) -> str:
             print(f"Translated: '{text[:50]}...' → '{translated[:50]}...'")
             return translated
         except Exception as e:
-            wait_time = DELAY_FAILURE * (attempt + 1)  # Exponential backoff
+            wait_time = DELAY_FAILURE * (attempt + 1)
             print(f"Attempt {attempt+1} failed (Waiting {wait_time}s): {str(e)[:100]}...")
             time.sleep(wait_time)
     
@@ -97,7 +97,7 @@ async def preprocess_text(text):
     tokens = word_tokenize(text)
     tokens = [normalize_dict.get(word, word) for word in tokens]  # Normalize slang
     tokens = [stemmer.stem(token) for token in tokens]  # Stem words
-    tokens = [re.sub(r'(ku|mu|nya)$', '', word) for word in tokens]  # Remove suffixes
+    tokens = [word for word in tokens if word != "nya"]  # Remove "nya"
     tokens = [word for word in tokens if word]  # Remove empty words
     return ' '.join(tokens)
 
