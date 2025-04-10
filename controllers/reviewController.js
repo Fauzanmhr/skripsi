@@ -1,8 +1,6 @@
 import Review from '../models/review.js';
-import ReviewExtra from '../models/review_extra.js';
 import { crawlAndSaveReviews } from '../services/googleMapsService.js';
-import { processGoogleSheetsData } from '../services/googleSheetsService.js';
-import { Op, Sequelize } from 'sequelize';
+import { Op } from 'sequelize';
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 
@@ -74,7 +72,6 @@ export async function renderReviewsPage(req, res) {
     // Get reviews with pagination and filters
     const reviews = await Review.findAll({
       where,
-      include: [{ model: ReviewExtra, required: false }],
       order: [['time_published', 'DESC']],
       limit,
       offset
@@ -132,26 +129,6 @@ export async function handleCrawlRequest(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to crawl reviews',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
-    });
-  }
-}
-
-// Controller to handle Google Sheets crawling request
-export async function handleSheetsCrawlRequest(req, res) {
-  try {
-    const sheetsUrl = process.env.GOOGLE_SHEETS_URL;
-    const result = await processGoogleSheetsData(sheetsUrl);
-    res.json({
-      success: true,
-      message: `Google Sheets processing completed. Saved: ${result.saved}, Updated: ${result.updated}, Errors: ${result.errors}`,
-      result
-    });
-  } catch (error) {
-    console.error('Google Sheets processing error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process Google Sheets data',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }

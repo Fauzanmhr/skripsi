@@ -18,7 +18,7 @@
           <div id="resultsState" class="d-none">
             <div class="alert alert-success" id="successAlert" role="alert"></div>
             <div class="alert alert-danger d-none" id="errorAlert" role="alert"></div>
-            <button class="btn btn-primary mt-3" data-bs-dismiss="modal">Close</button>
+            <button class="btn btn-primary mt-3" id="closeModalButton" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
@@ -79,13 +79,9 @@
     <div class="mt-4 d-flex justify-content-between align-items-center mb-4">
       <h2 class="fw-bold"></h2>
       <div class="d-flex gap-2">
-        <button id="exportButton" class="btn btn-warning d-flex align-items-center">
+        <button id="exportButton" class="btn btn-success d-flex align-items-center">
           <i class="bi bi-file-earmark-excel me-2"></i>
           Export to Excel
-        </button>
-        <button id="sheetsButton" class="btn btn-success d-flex align-items-center">
-          <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="sheetsSpinner"></span>
-          Scrape Google Forms Data
         </button>
         <button id="crawlButton" class="btn btn-primary d-flex align-items-center">
           <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="crawlSpinner"></span>
@@ -128,13 +124,12 @@
                 <th class="text-start w-50">Review</th>
                 <th>Sentiment</th>
                 <th>Source</th>
-                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               <% if (reviews.length === 0) { %>
                 <tr>
-                  <td colspan="6" class="text-center text-muted">No reviews found</td>
+                  <td colspan="4" class="text-center text-muted">No reviews found</td>
                 </tr>
               <% } else { %>
                 <% reviews.forEach(review => { %>
@@ -151,25 +146,9 @@
                       </span>
                     </td>
                     <td>
-                      <span class="badge bg-<%= review.source === 'Google Forms' ? 'success' : 'primary' %>">
+                      <span class="badge bg-primary">
                         <%= review.source %>
                       </span>
-                    </td>
-                    <td>
-                      <% if (review.review_extra) { %>
-                        <button class="btn btn-sm" 
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="left"
-                                data-bs-html="true"
-                                title="<div class='text-start'>
-                                       <strong>Gender:</strong> <%= review.review_extra.gender %><br>
-                                       <strong>Age:</strong> <%= review.review_extra.age_category %><br>
-                                       <strong>Occupation:</strong> <%= review.review_extra.occupation %><br>
-                                       <strong>First Visit:</strong> <%= review.review_extra.first_visit ? 'Yes' : 'No' %>
-                                       </div>">
-                          <i class="bi bi-info-circle-fill"></i>
-                        </button>
-                      <% } %>
                     </td>
                   </tr>
                 <% }); %>
@@ -225,15 +204,22 @@
     // Initialize tooltips
     initTooltips();
     
-    // Set up crawl buttons
+    // Set up crawl button
     setupCrawlButton();
-    setupSheetsButton();
     
     // Handle filter
     setupFilterHandlers();
     
     // Set up export button
     setupExportButton();
+
+    // Reload page when modal is closed
+    const loadingModal = document.getElementById('loadingModal');
+    if (loadingModal) {
+      loadingModal.addEventListener('hidden.bs.modal', function() {
+        location.reload();
+      });
+    }
   });
   
   function initTooltips() {
@@ -248,12 +234,6 @@
   function setupCrawlButton() {
     document.getElementById('crawlButton').addEventListener('click', async function() {
       await performCrawl(this, 'crawlSpinner', '/reviews/crawl');
-    });
-  }
-  
-  function setupSheetsButton() {
-    document.getElementById('sheetsButton').addEventListener('click', async function() {
-      await performCrawl(this, 'sheetsSpinner', '/reviews/crawl-sheets');
     });
   }
   
