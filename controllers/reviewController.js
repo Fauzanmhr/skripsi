@@ -1,8 +1,7 @@
 import Review from '../models/review.js';
 import { crawlAndSaveReviews } from '../services/googleMapsService.js';
 import { Op } from 'sequelize';
-import ExcelJS from 'exceljs';
-import { format } from 'date-fns';
+import { generateReviewsExcel } from '../services/exportService.js';
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -169,37 +168,8 @@ export async function exportReviewsToExcel(req, res) {
       order: [['time_published', 'DESC']]
     });
     
-    // Create a new workbook
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Reviews');
-    
-    // Define columns
-    worksheet.columns = [
-      { header: 'Date', key: 'date', width: 15 },
-      { header: 'Review', key: 'review', width: 50 },
-      { header: 'Sentiment', key: 'sentiment', width: 15 },
-      { header: 'Source', key: 'source', width: 15 }
-    ];
-    
-    // Add rows
-    reviews.forEach(review => {
-      worksheet.addRow({
-        date: format(new Date(review.time_published), 'yyyy-MM-dd'),
-        review: review.review,
-        sentiment: review.sentiment || 'Pending',
-        source: review.source
-      });
-    });
-    
-    // Style header row
-    worksheet.getRow(1).eachCell(cell => {
-      cell.font = { bold: true };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFD3D3D3' }
-      };
-    });
+    // Generate Excel workbook using the service
+    const workbook = await generateReviewsExcel(reviews);
     
     // Set response headers for file download
     res.setHeader(
