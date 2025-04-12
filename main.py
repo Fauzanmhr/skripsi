@@ -1,3 +1,4 @@
+# Impor library
 import torch
 import uvicorn
 import pandas as pd
@@ -13,56 +14,56 @@ from deep_translator import DeeplTranslator
 from nltk.tokenize import word_tokenize
 from lingua import Language, LanguageDetectorBuilder
 
-# Initialize FastAPI app
+# Inisialisasi aplikasi FastAPI
 app = FastAPI()
 
-# DeepL Configuration
+# Konfigurasi DeepL
 DEEPL_API_KEY = "12ffed92-8918-46de-8423-78d91387c3c4:fx"  # api key
-USE_FREE_API = True                 # Use DeepL Free API
-MAX_RETRIES = 3                     # Max attempts per translation
-DELAY_SUCCESS = 1.0                 # Seconds between requests
-DELAY_FAILURE = 5                   # Seconds after failed requests
+USE_FREE_API = True                 # Menggunakan API Gratis DeepL
+MAX_RETRIES = 3                     # Maksimal percobaan per translasi
+DELAY_SUCCESS = 1.0                 # Delay antara request sukses (detik)
+DELAY_FAILURE = 5                   # Delay setelah request gagal (detik)
 
-# Check if CUDA is available
+# Cek ketersediaan CUDA
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+print(f"Menggunakan device: {device}")
 
-# Load pre-trained BERT model and tokenizer
+# Memuat model BERT dan tokenizer yang sudah dilatih sebelumnya
 MODEL_PATH = "./saved_model"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
-model.to(device)  # Move model to CUDA if available
+model.to(device)  # Pindahkan model ke CUDA jika tersedia
 model.eval()
 
-# Sentiment label mapping
+# Pemetaan label sentimen
 LABEL_MAPPING = {0: 'netral', 1: 'positif', 2: 'negatif', 3: 'puas', 4: 'kecewa'}
 
-# Load NLP resources
+# Memuat resource NLP
 nltk.download('punkt_tab', quiet=True)
 stemmer = sastrawi.Stemmer()
 SUPPORTED_LANGUAGES = [Language.ENGLISH, Language.INDONESIAN]
 detector = LanguageDetectorBuilder.from_languages(*SUPPORTED_LANGUAGES).build()
 
-# Load normalization dictionary
+# Memuat kamus normalisasi
 normalize_dict_path = "./normal.csv"
 normalize_dict = pd.read_csv(normalize_dict_path)
 normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
 
-# Translation cache to avoid repeating requests
+# Cache translasi untuk menghindari permintaan berulang
 translation_cache = {}
 
 async def translate(text: str) -> str:
-    # Check cache first
+    # Cek cache terlebih dahulu
     if text in translation_cache:
         return translation_cache[text]
     
-    # Skip if already Indonesian
+    # Lewati jika sudah bahasa Indonesia
     detected_lang = detector.detect_language_of(text)
     if detected_lang == Language.INDONESIAN:
         translation_cache[text] = text
         return text
     
-    # Attempt translation with retries
+    # Mencoba translasi dengan mekanisme retry
     for attempt in range(MAX_RETRIES):
         try:
             translator = DeeplTranslator(
@@ -73,42 +74,44 @@ async def translate(text: str) -> str:
             )
             translated = translator.translate(text)
             translation_cache[text] = translated
-            time.sleep(DELAY_SUCCESS)  # Rate limiting
+            time.sleep(DELAY_SUCCESS)  # Pembatasan rate
             print(f"Translated: '{text[:50]}...' → '{translated[:50]}...'")
             return translated
         except Exception as e:
             wait_time = DELAY_FAILURE * (attempt + 1)
-            print(f"Attempt {attempt+1} failed (Waiting {wait_time}s): {str(e)[:100]}...")
+            print(f"Percobaan {attempt+1} gagal (Menunggu {wait_time}s): {str(e)[:100]}...")
             time.sleep(wait_time)
     
-    # Fallback to original text if all retries fail
+    # Kembalikan teks asli jika semua percobaan gagal
     translation_cache[text] = text
     return text
 
-# Preprocessing pipeline
+# Pipeline preprocessing teks
 async def preprocess_text(text):
-    text = await translate(text)  # Uses DeepL
-    text = text.lower().strip()
-    text = emoji.demojize(text, language='id')
-    text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Remove mentions & URLs
-    text = re.sub(r'(.)\1+', r'\1', text)  # Remove repeated characters
-    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Remove non-alphabetic
-    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
-    tokens = word_tokenize(text)
-    tokens = [normalize_dict.get(word, word) for word in tokens]  # Normalize slang
-    tokens = [stemmer.stem(token) for token in tokens]  # Stem words
-    tokens = [word for word in tokens if word != "nya"]  # Remove "nya"
-    tokens = [word for word in tokens if word]  # Remove empty words
+    text = await translate(text)  # Menggunakan DeepL
+    text = text.lower().strip()  # Konversi ke huruf kecil dan hapus spasi
+    text = emoji.demojize(text, language='id')  # Konversi emoji ke teks
+    text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Hapus mention & URL
+    text = re.sub(r'(.)\1+', r'\1', text)  # Hapus karakter berulang
+    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Hapus non-alfabet
+    text = re.sub(r'\s+', ' ', text).strip()  # Hapus spasi berlebih
+    tokens = word_tokenize(text)  # Tokenisasi
+    tokens = [normalize_dict.get(word, word) for word in tokens]  # Normalisasi slang
+    tokens = [stemmer.stem(token) for token in tokens]  # Stemming kata
+    tokens = [word for word in tokens if word != "nya"]  # Hapus kata "nya"
+    tokens = [word for word in tokens if word]  # Hapus kata kosong
     return ' '.join(tokens)
 
-# Request model
+# Model untuk request input
 class TextInput(BaseModel):
     text: str
 
+# Endpoint root
 @app.get("/")
 def root():
-    return {"message": "API is running"}
+    return {"message": "API berjalan"}
 
+# Endpoint untuk prediksi sentimen
 @app.post("/predict")
 async def predict_sentiment(input_text: TextInput):
     processed_text = await preprocess_text(input_text.text)
@@ -121,5 +124,6 @@ async def predict_sentiment(input_text: TextInput):
     prediction = torch.argmax(outputs.logits, dim=-1).item()
     return {"sentiment": LABEL_MAPPING[prediction]}
 
+# Menjalankan aplikasi
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
