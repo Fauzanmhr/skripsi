@@ -35,7 +35,7 @@ model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
 model.to(device)  # Pindahkan model ke CUDA jika tersedia
 model.eval()
 
-# Pemetaan label sentimen
+# label sentimen
 LABEL_MAPPING = {0: 'netral', 1: 'positif', 2: 'negatif', 3: 'puas', 4: 'kecewa'}
 
 # Memuat resource NLP
