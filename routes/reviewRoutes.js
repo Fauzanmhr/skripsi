@@ -8,12 +8,12 @@ import {
 const router = express.Router();
 
 // Route for the reviews page
-router.get('/', renderReviewsPage);
+router.get('/reviews', renderReviewsPage);
 
 // Route for triggering Google Maps crawling
-router.post('/crawl', handleCrawlRequest);
+router.post('/reviews/crawl', handleCrawlRequest);
 
 // Route for exporting reviews to Excel
-router.get('/export', exportReviewsToExcel);
+router.get('/reviews/export', exportReviewsToExcel);
 
 export default router;

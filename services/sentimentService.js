@@ -8,21 +8,25 @@ const API_URL = process.env.SENTIMENT_API_URL || 'http://localhost:8000/predict'
 // Analyze sentiment for a single review
 export async function analyzeSentiment(review) {
   try {
+    const reviewText = typeof review === 'string' ? review : review.review;
+    
     // Call the sentiment analysis API
-    const response = await axios.post(API_URL, { text: review.review });
+    const response = await axios.post(API_URL, { text: reviewText });
     
     // Validate API response
     if (!response.data?.sentiment) {
       throw new Error('Invalid API response: missing sentiment prediction');
     }
     
-    // Update the review with the sentiment result
-    await review.update({ sentiment: response.data.sentiment });
-    console.log(`Successfully analyzed review ${review.id}: ${response.data.sentiment}`);
+    // If we received a review object (from database), update it
+    if (typeof review !== 'string' && review.update) {
+      await review.update({ sentiment: response.data.sentiment });
+      console.log(`Successfully analyzed review ${review.id}: ${response.data.sentiment}`);
+    }
     
     return response.data.sentiment;
   } catch (error) {
-    console.error(`Error analyzing review ${review.id}:`, error.message);
+    console.error('Error analyzing review:', error.message);
     throw error;
   }
 }

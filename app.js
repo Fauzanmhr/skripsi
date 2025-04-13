@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import morgan from 'morgan';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import analyzeRoutes from './routes/analyzeRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
 import { sequelize } from './config/database.js';
 
@@ -38,8 +39,7 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/chart.js/dist')
 app.use('/icons', express.static(path.join(__dirname, 'node_modules/bootstrap-icons/font')));
 
 // Routes
-app.use('/', dashboardRoutes);
-app.use('/reviews', reviewRoutes);
+app.use('/', dashboardRoutes, reviewRoutes, analyzeRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
