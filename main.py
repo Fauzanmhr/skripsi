@@ -29,7 +29,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Menggunakan device: {device}")
 
 # Memuat model BERT dan tokenizer yang sudah dilatih sebelumnya
-MODEL_PATH = "./saved_model"
+MODEL_PATH = "./sentiment_model"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
 model.to(device)  # Pindahkan model ke CUDA jika tersedia
