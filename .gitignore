@@ -1,13 +1,12 @@
 colloquial-indonesian-lexicon.csv
-saved_model.zip
 test.py
 env
 venv
 .venv
-saved_model
 config.json
 model.safetensors
 special_tokens_map.json
 tokenizer_config.json
 vocab.txt
 sentiment_model
+sentiment_model.zip
