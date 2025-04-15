@@ -51,22 +51,14 @@ export async function handleFileUpload(req, res) {
       filename: req.file.originalname,
       timestamp: Date.now()
     });
-    
-    // Clean up old uploads every hour
-    setTimeout(() => {
-      if (uploadedFiles.has(fileId)) {
-        uploadedFiles.delete(fileId);
-      }
-    }, 3600000); // 1 hour
 
     res.json({
       success: true,
       columns,
       preview: rows,
       totalRows: rows.length,
-      filename: fileId, // Send the file ID instead of original filename
-      originalFilename: req.file.originalname, // Add the original filename
-      fileContent: JSON.stringify(rows.slice(0, 10)) // Only send preview data
+      filename: fileId,
+      originalFilename: req.file.originalname
     });
 
   } catch (error) {
