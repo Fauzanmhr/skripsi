@@ -11,7 +11,7 @@ export async function fetchReviews(googleMapsURL) {
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
       search_query: "",
-      pages: 1,
+      // pages: 1,
       clean: true
     });
     
