@@ -48,7 +48,7 @@ export async function handleFileUpload(req, res) {
     // Store the parsed data in memory
     uploadedFiles.set(fileId, {
       rows,
-      filename: req.file.originalname,
+      originalFilename: req.file.originalname,  // Use consistent naming
       timestamp: Date.now()
     });
 
@@ -57,8 +57,8 @@ export async function handleFileUpload(req, res) {
       columns,
       preview: rows,
       totalRows: rows.length,
-      filename: fileId,
-      originalFilename: req.file.originalname
+      fileId: fileId,  // Renamed to match variable
+      originalFilename: req.file.originalname  // Consistent naming
     });
 
   } catch (error) {
@@ -73,19 +73,19 @@ export async function handleFileUpload(req, res) {
 // Process the file with selected column
 export async function processFileAnalysis(req, res) {
   try {
-    const { filename, column } = req.body;
+    const { fileId, column } = req.body;  // Changed from filename to fileId
 
-    if (!column || !filename) {
+    if (!column || !fileId) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
     
     // Get the stored file data using the file ID
-    const fileData = uploadedFiles.get(filename);
+    const fileData = uploadedFiles.get(fileId);  // Match the new parameter name
     if (!fileData) {
       return res.status(404).json({ error: 'File not found or expired. Please upload again.' });
     }
     
-    const { rows, filename: originalFilename } = fileData;
+    const { rows, originalFilename } = fileData;  // Use consistent naming
     const processedRows = await processFileContent(rows, column);
 
     // Generate the output file
@@ -97,7 +97,7 @@ export async function processFileAnalysis(req, res) {
     }
 
     // Clean up the stored file data after processing
-    uploadedFiles.delete(filename);
+    uploadedFiles.delete(fileId);
 
     res.json({
       success: true,

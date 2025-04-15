@@ -112,7 +112,7 @@
       if (!res.ok) throw new Error(result.error || 'Upload failed');
       
       window.fileData = {
-        filename: result.filename,
+        fileId: result.fileId,
         fileInput: fileInput
       };
       
@@ -200,7 +200,7 @@
     
     // Store the file ID and original filename
     window.fileData = {
-      filename: result.filename,
+      fileId: result.fileId,  // Changed from filename to fileId
       originalFilename: result.originalFilename
     };
   }
@@ -228,7 +228,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: window.fileData.filename,
+          fileId: window.fileData.fileId,  // Changed from filename to fileId
           column: selectedCol
         })
       });
