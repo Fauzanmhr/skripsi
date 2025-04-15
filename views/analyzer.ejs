@@ -153,7 +153,7 @@
               <div class="card h-100">
                 <div class="card-body p-3">
                   <h6 class="card-title border-bottom pb-2">File Information</h6>
-                  <p class="small mb-1"><strong>File:</strong> ${result.filename}</p>
+                  <p class="small mb-1"><strong>File:</strong> ${result.originalname || result.filename}</p>
                   <p class="small mb-1"><strong>Columns:</strong> ${result.columns.length}</p>
                   <p class="small mb-1"><strong>Rows:</strong> ${result.totalRows}</p>
                 </div>
@@ -198,6 +198,12 @@
 
     // Set up process button
     document.getElementById('processButton').addEventListener('click', processSelectedColumn);
+    
+    // Store the file ID instead of the entire content
+    window.fileData = {
+      filename: result.filename,
+      originalFilename: result.originalname
+    };
   }
 
   async function processSelectedColumn() {
@@ -224,8 +230,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           filename: window.fileData.filename,
-          column: selectedCol,
-          fileContent: window.fileData.fileContent
+          column: selectedCol
         })
       });
 
@@ -236,7 +241,6 @@
       // Hide modal and show results directly
       window.loadingModal.hide();
       showAnalysisResults(result);
-
     } catch (err) {
       document.getElementById('loadingState').classList.add('d-none');
       document.getElementById('errorState').classList.remove('d-none');

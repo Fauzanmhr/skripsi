@@ -6,6 +6,9 @@ import {
   processFileContent
 } from '../services/analyzeService.js';
 
+// In-memory storage for uploaded files
+const uploadedFiles = new Map();
+
 // Render the file upload page
 export function renderFileUploadPage(req, res) {
   res.render('analyzer', {
@@ -38,14 +41,31 @@ export async function handleFileUpload(req, res) {
     }
 
     const columns = Object.keys(rows[0]);
+    
+    // Generate a unique ID for the file
+    const fileId = Date.now().toString();
+    
+    // Store the parsed data in memory
+    uploadedFiles.set(fileId, {
+      rows,
+      filename: req.file.originalname,
+      timestamp: Date.now()
+    });
+    
+    // Clean up old uploads every hour (implement a cleanup mechanism)
+    setTimeout(() => {
+      if (uploadedFiles.has(fileId)) {
+        uploadedFiles.delete(fileId);
+      }
+    }, 3600000); // 1 hour
 
     res.json({
       success: true,
       columns,
-      preview: rows,
+      preview: rows.slice(0, 10), // Only send preview rows
       totalRows: rows.length,
-      filename: req.file.originalname,
-      fileContent: rows
+      filename: fileId, // Send the file ID instead of original filename
+      fileContent: JSON.stringify(rows.slice(0, 10)) // Only send preview data
     });
 
   } catch (error) {
@@ -60,26 +80,35 @@ export async function handleFileUpload(req, res) {
 // Process the file with selected column
 export async function processFileAnalysis(req, res) {
   try {
-    const { filename, column, fileContent } = req.body;
+    const { filename, column } = req.body;
 
-    if (!column || !fileContent) {
+    if (!column || !filename) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
-
-    const rows = JSON.parse(fileContent);
+    
+    // Get the stored file data using the file ID
+    const fileData = uploadedFiles.get(filename);
+    if (!fileData) {
+      return res.status(404).json({ error: 'File not found or expired. Please upload again.' });
+    }
+    
+    const { rows, filename: originalFilename } = fileData;
     const processedRows = await processFileContent(rows, column);
 
     // Generate the output file
     let outputFile;
-    if (filename.endsWith('.csv')) {
+    if (originalFilename.endsWith('.csv')) {
       outputFile = await generateCSV(processedRows);
     } else {
       outputFile = await generateExcel(processedRows);
     }
 
+    // Clean up the stored file data after processing
+    uploadedFiles.delete(filename);
+
     res.json({
       success: true,
-      filename: `analyzed_${filename}`,
+      filename: `analyzed_${originalFilename}`,
       file: outputFile.toString('base64'),
       total: processedRows.length
     });
