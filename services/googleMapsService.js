@@ -11,7 +11,7 @@ export async function fetchReviews(googleMapsURL) {
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
       search_query: "",
-      // pages: 15,
+      pages: 1,
       clean: true
     });
     
@@ -32,7 +32,7 @@ export async function fetchReviews(googleMapsURL) {
       .map(review => ({
         id: review.review_id,
         review: cleanText(review.review.text),
-        time_published: new Date(review.time.published / 1000).toISOString().slice(0, 19).replace("T", " "),
+        time_published: new Date(review.time.published / 1000),
         source: "Google Maps Reviews"
       })) || [];
   } catch (error) {
