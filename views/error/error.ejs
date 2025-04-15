@@ -1,11 +1,11 @@
-<!-- /views/error.ejs -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Error</title>
-</head>
-<body>
-    <h1>Error</h1>
-    <p><%= message %></p>
-</body>
-</html>
+<%- include('partials/header', { title: 'Error', page: 'error' }) %>
+
+<div class="container mt-5">
+  <h1 class="text-danger">Error</h1>
+  <p><%= message %></p>
+  <% if (error.stack) { %>
+    <pre><%= error.stack %></pre>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

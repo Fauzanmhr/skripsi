@@ -34,12 +34,12 @@
       <% }); %>
     </div>
     
-    <!-- Chart Row -->
+    <!-- All Time Chart Row -->
     <div class="row w-100 justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0">Sentiment Distribution</h5>
+            <h5 class="card-title mb-0">All Time Sentiment Distribution</h5>
           </div>
           <div class="card-body text-center">
             <div class="chart-container" style="position: relative; width: 100%; height: 300px;">
@@ -50,51 +50,30 @@
       </div>
     </div>
     
-    <!-- Sentiment by Time Chart -->
-    <div class="row w-100 mb-4">
-      <div class="col-md-12">
+    <!-- Filtered Chart Row -->
+    <div class="row w-100 justify-content-center">
+      <div class="col-md-12 mb-4">
         <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Sentiment Trends Over Time</h5>
-            <div class="d-flex align-items-center">
-              <!-- Month filter dropdown -->
-              <div class="dropdown me-3">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="monthDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <span id="selectedMonthLabel">Loading...</span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="monthDropdown" id="monthDropdownMenu">
-                  <li><a class="dropdown-item" href="#" data-month="all">All Months</a></li>
-                  <% for(let i = 1; i <= 12; i++) { %>
-                    <li>
-                      <a class="dropdown-item" href="#" data-month="<%= i.toString().padStart(2, '0') %>">
-                        <%= new Date(0, i-1).toLocaleString('default', { month: 'long' }) %>
-                      </a>
-                    </li>
-                  <% } %>
-                </ul>
-              </div>
-              
-              <!-- Year filter dropdown -->
-              <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <span id="selectedYearLabel">Loading...</span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="yearDropdown" id="yearDropdownMenu">
-                  <li><a class="dropdown-item" href="#" data-year="all">All Years</a></li>
-                  <% availableYears.forEach(year => { %>
-                    <li>
-                      <a class="dropdown-item" href="#" data-year="<%= year %>">
-                        <%= year %>
-                      </a>
-                    </li>
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="card-title mb-0">Period Sentiment Distribution</h5>
+            <div class="filter-controls d-flex gap-2">
+              <form id="filterForm" class="d-flex gap-2" method="get">
+                <select name="month" id="monthFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <% filters.months.forEach(month => { %>
+                    <option value="<%= month.value %>" <%= month.value === filters.selectedMonth ? 'selected' : '' %>><%= month.name %></option>
                   <% }); %>
-                </ul>
-              </div>
+                </select>
+                <select name="year" id="yearFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <% filters.years.forEach(year => { %>
+                    <option value="<%= year %>" <%= year === filters.selectedYear ? 'selected' : '' %>><%= year %></option>
+                  <% }); %>
+                </select>
+              </form>
             </div>
           </div>
-          <div class="card-body">
-            <div class="chart-container" style="position: relative; width: 100%; height: 350px;">
-              <canvas id="timeSeriesChart"></canvas>
+          <div class="card-body text-center">
+            <div class="chart-container" style="position: relative; width: 100%; height: 300px;">
+              <canvas id="filteredSentimentChart"></canvas>
             </div>
           </div>
         </div>
@@ -110,9 +89,7 @@
 <script>
   // Get data from server
   const stats = <%- JSON.stringify(stats) %>;
-  const monthlyDetailData = <%- JSON.stringify(monthlyDetailData) %>;
-  const availableYears = <%- JSON.stringify(availableYears) %>;
-  const latestYear = "<%= latestYear %>";
+  const filters = <%- JSON.stringify(filters) %>;
   
   // Define WCAG-compliant color mapping
   const colors = {
@@ -123,50 +100,42 @@
     'kecewa': 'rgba(230, 81, 0, 0.8)'       // Dark orange - high contrast, WCAG AA compliant
   };
   
-  // Get current date
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear().toString();
-  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-  
-  // Set initial values to current month and year, fallback to latest data if current not available
-  let selectedYear = availableYears.includes(currentYear) ? currentYear : latestYear;
-  let selectedMonth = currentMonth;
-  
-  // Check if data exists for current month, otherwise default to 'all'
-  let currentMonthHasData = monthlyDetailData.some(item => {
-    const [itemYear, itemMonth] = item.year_month.split('-');
-    return itemYear === selectedYear && itemMonth === selectedMonth;
-  });
-  
-  if (!currentMonthHasData) {
-    selectedMonth = 'all';
-  }
-  
-  let timeSeriesChart;
-  
   // Create charts and update cards
   document.addEventListener('DOMContentLoaded', function() {
     const labels = stats.labels;
-    const data = labels.map(label => stats.counts[label]);
+    const data = labels.map(label => stats.allTimeCounts[label]);
+    const filteredData = labels.map(label => stats.counts[label]);
     
     // Apply colors to progress bars
     applyProgressBarColors();
     
-    // Update sentiment cards
+    // Update sentiment cards - use all-time data for cards
     updateSentimentCards(labels, data);
     
-    // Create sentiment chart
-    createSentimentChart(labels, data);
+    // Create all time sentiment chart
+    createSentimentChart(labels, data, 'sentimentChart', 'All Time');
     
-    // Setup year dropdown with current year selected
-    setupYearDropdown();
+    // Create filtered sentiment chart
+    createSentimentChart(
+      labels, 
+      filteredData, 
+      'filteredSentimentChart', 
+      `${getMonthName(filters.selectedMonth)} ${filters.selectedYear}`
+    );
     
-    // Setup month dropdown with current month selected
-    setupMonthDropdown();
-    
-    // Create time series chart with default filters
-    createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
+    // Add pointer cursor to charts to indicate they're clickable
+    document.querySelectorAll('canvas').forEach(canvas => {
+      canvas.style.cursor = 'pointer';
+    });
   });
+  
+  function getMonthName(monthNum) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthNum - 1];
+  }
   
   // Apply colors to progress bars
   function applyProgressBarColors() {
@@ -202,9 +171,9 @@
   }
   
   // Create sentiment distribution chart
-  function createSentimentChart(labels, data) {
+  function createSentimentChart(labels, data, chartId, periodLabel) {
     const backgroundColors = labels.map(label => colors[label]);
-    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    const ctx = document.getElementById(chartId).getContext('2d');
     
     new Chart(ctx, {
       type: 'bar',
@@ -220,8 +189,35 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, 
+        maintainAspectRatio: false,
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const sentiment = labels[index];
+            // For filtered chart, include date range in the URL
+            if (chartId === 'filteredSentimentChart') {
+              // Properly calculate first and last day of month, accounting for timezone issues
+              
+              // Create first day of month: YYYY-MM-01
+              const firstDay = `${filters.selectedYear}-${String(filters.selectedMonth).padStart(2, '0')}-01`;
+              
+              // Calculate last day of month correctly
+              // Using the fact that day 0 of next month is the last day of current month
+              const lastDayDate = new Date(filters.selectedYear, filters.selectedMonth, 0);
+              const lastDay = `${filters.selectedYear}-${String(filters.selectedMonth).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+              
+              window.location.href = `/reviews?sentiment=${sentiment}&startDate=${firstDay}&endDate=${lastDay}`;
+            } else {
+              // For all-time chart, just filter by sentiment
+              window.location.href = `/reviews?sentiment=${sentiment}`;
+            }
+          }
+        },
         plugins: {
+          title: {
+            display: true,
+            text: `Sentiment Distribution - ${periodLabel}`
+          },
           legend: { display: false },
           tooltip: {
             callbacks: {
@@ -235,292 +231,6 @@
           y: {
             beginAtZero: true,
             ticks: { precision: 0 }
-          }
-        }
-      }
-    });
-  }
-  
-  // Setup year dropdown
-  function setupYearDropdown() {
-    const yearDropdownItems = document.querySelectorAll('#yearDropdownMenu .dropdown-item');
-    const selectedYearLabel = document.getElementById('selectedYearLabel');
-    
-    // Set the initial year in the UI
-    selectedYearLabel.textContent = selectedYear;
-    
-    // Mark the current year as active in the dropdown
-    yearDropdownItems.forEach(item => {
-      if (item.dataset.year === selectedYear) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-      
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Remove active class from all items
-        yearDropdownItems.forEach(i => i.classList.remove('active'));
-        
-        // Add active class to clicked item
-        this.classList.add('active');
-        
-        // Update selected year and label
-        selectedYear = this.dataset.year;
-        selectedYearLabel.textContent = selectedYear === 'all' ? 'All Years' : selectedYear;
-        
-        // If "All Years" is selected, automatically set month to "All Months"
-        if (selectedYear === 'all') {
-          selectedMonth = 'all';
-          
-          // Update the month dropdown UI
-          const monthDropdownItems = document.querySelectorAll('#monthDropdownMenu .dropdown-item');
-          monthDropdownItems.forEach(i => i.classList.remove('active'));
-          document.querySelector('#monthDropdownMenu [data-month="all"]').classList.add('active');
-          document.getElementById('selectedMonthLabel').textContent = 'All Months';
-          
-          // Disable month dropdown when viewing all years
-          document.getElementById('monthDropdown').classList.add('disabled');
-          document.getElementById('monthDropdown').setAttribute('disabled', 'disabled');
-        } else {
-          // Re-enable month dropdown
-          document.getElementById('monthDropdown').classList.remove('disabled');
-          document.getElementById('monthDropdown').removeAttribute('disabled');
-        }
-        
-        // Refresh chart
-        createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
-      });
-    });
-  }
-  
-  // Setup month dropdown
-  function setupMonthDropdown() {
-    const monthDropdownItems = document.querySelectorAll('#monthDropdownMenu .dropdown-item');
-    const selectedMonthLabel = document.getElementById('selectedMonthLabel');
-    
-    // Set the initial month in the UI
-    if (selectedMonth === 'all') {
-      selectedMonthLabel.textContent = 'All Months';
-    } else {
-      const monthIndex = parseInt(selectedMonth) - 1;
-      selectedMonthLabel.textContent = new Date(0, monthIndex).toLocaleString('default', { month: 'long' });
-    }
-    
-    // Mark the current month as active in the dropdown
-    monthDropdownItems.forEach(item => {
-      if (item.dataset.month === selectedMonth) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-      
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // If all years is selected, don't allow month selection
-        if (selectedYear === 'all') {
-          return;
-        }
-        
-        // Remove active class from all items
-        monthDropdownItems.forEach(i => i.classList.remove('active'));
-        
-        // Add active class to clicked item
-        this.classList.add('active');
-        
-        // Update selected month and label
-        selectedMonth = this.dataset.month;
-        
-        if (selectedMonth === 'all') {
-          selectedMonthLabel.textContent = 'All Months';
-        } else {
-          const monthIndex = parseInt(selectedMonth) - 1;
-          const monthName = new Date(0, monthIndex).toLocaleString('default', { month: 'long' });
-          selectedMonthLabel.textContent = monthName;
-        }
-        
-        // Refresh chart
-        createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
-      });
-    });
-  }
-  
-  // Create time series chart
-  function createTimeSeriesChart(labels, month = 'all', year = null) {
-    if (year) selectedYear = year;
-    if (month) selectedMonth = month;
-    
-    let chartLabels;
-    const chartData = {};
-    
-    // Handle "All Years" selection
-    if (selectedYear === 'all') {
-      // Get data by year
-      const yearlyData = {};
-      
-      // Group all data by year and sentiment
-      monthlyDetailData.forEach(item => {
-        const itemYear = item.year_month.split('-')[0];
-        
-        if (!yearlyData[itemYear]) {
-          yearlyData[itemYear] = {};
-        }
-        
-        if (!yearlyData[itemYear][item.sentiment]) {
-          yearlyData[itemYear][item.sentiment] = 0;
-        }
-        
-        yearlyData[itemYear][item.sentiment] += parseInt(item.count);
-      });
-      
-      // Sort years
-      const years = Object.keys(yearlyData).sort();
-      chartLabels = years;
-      
-      // Initialize data structure
-      labels.forEach(sentiment => {
-        chartData[sentiment] = years.map(year => 
-          yearlyData[year] && yearlyData[year][sentiment] ? yearlyData[year][sentiment] : 0
-        );
-      });
-    } else {
-      // Filter data based on selected year
-      let filteredData = monthlyDetailData.filter(item => {
-        const itemYear = item.year_month.split('-')[0];
-        return itemYear === selectedYear;
-      });
-      
-      if (selectedMonth === 'all') {
-        // Show data for all months in selected year
-        chartLabels = Array.from({length: 12}, (_, i) => {
-          const monthIndex = i;
-          return new Date(parseInt(selectedYear), monthIndex).toLocaleString('default', { month: 'short' });
-        });
-        
-        // Initialize data structure
-        labels.forEach(sentiment => {
-          chartData[sentiment] = Array(12).fill(0);
-        });
-        
-        // Group data by month and sentiment
-        const monthlySums = {};
-        
-        filteredData.forEach(item => {
-          const itemMonth = item.year_month.split('-')[1];
-          const monthIndex = parseInt(itemMonth) - 1; // Convert to 0-based index
-          
-          if (!monthlySums[monthIndex]) {
-            monthlySums[monthIndex] = {};
-          }
-          
-          if (!monthlySums[monthIndex][item.sentiment]) {
-            monthlySums[monthIndex][item.sentiment] = 0;
-          }
-          
-          monthlySums[monthIndex][item.sentiment] += parseInt(item.count);
-        });
-        
-        // Fill in the data for the chart
-        for (const monthIndex in monthlySums) {
-          for (const sentiment in monthlySums[monthIndex]) {
-            if (labels.includes(sentiment)) {
-              chartData[sentiment][monthIndex] = monthlySums[monthIndex][sentiment];
-            }
-          }
-        }
-      } else {
-        // Show data for selected month
-        const monthIndex = parseInt(selectedMonth) - 1;
-        chartLabels = [new Date(parseInt(selectedYear), monthIndex).toLocaleString('default', { month: 'long' })];
-        
-        // Group data by sentiment for the selected month
-        const sentimentSums = {};
-        
-        filteredData.forEach(item => {
-          const itemMonth = item.year_month.split('-')[1];
-          
-          if (itemMonth === selectedMonth) {
-            if (!sentimentSums[item.sentiment]) {
-              sentimentSums[item.sentiment] = 0;
-            }
-            
-            sentimentSums[item.sentiment] += parseInt(item.count);
-          }
-        });
-        
-        // Set up chart data
-        labels.forEach(sentiment => {
-          chartData[sentiment] = [sentimentSums[sentiment] || 0];
-        });
-      }
-    }
-    
-    const datasets = labels.map(sentiment => {
-      return {
-        label: sentiment.charAt(0).toUpperCase() + sentiment.slice(1),
-        data: chartData[sentiment],
-        borderColor: colors[sentiment].replace('0.8', '1'),
-        backgroundColor: colors[sentiment].replace('0.8', '0.2'),
-        borderWidth: 2,
-        tension: 0.3,
-        fill: true,
-      };
-    });
-    
-    const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (timeSeriesChart) {
-      timeSeriesChart.destroy();
-    }
-    
-    // Determine chart type based on context
-    let chartType;
-    if (selectedYear === 'all' || (selectedMonth === 'all' && selectedYear !== 'all')) {
-      chartType = 'line';
-    } else {
-      chartType = 'bar';
-    }
-    
-    timeSeriesChart = new Chart(timeSeriesCtx, {
-      type: chartType,
-      data: {
-        labels: chartLabels,
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        plugins: {
-          legend: { 
-            position: 'top',
-            labels: {
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            stacked: false,
-            ticks: { precision: 0 }
-          },
-          x: {
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
-            }
           }
         }
       }
