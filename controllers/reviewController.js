@@ -30,17 +30,11 @@ export async function renderReviewsPage(req, res) {
     const offset = (page - 1) * limit;
     
     // Extract filter parameters
-    const sourceFilter = req.query.source || '';
     const sentimentFilter = req.query.sentiment || '';
+    const startDateFilter = req.query.startDate || '';
+    const endDateFilter = req.query.endDate || '';
     
-    // Get all available sources from the database
-    const sources = await Review.findAll({
-      attributes: ['source'],
-      group: ['source'],
-      order: [['source', 'ASC']]
-    });
-    
-    // Get all available sentiment values from the database
+    // Get all available sentiments from the database
     const sentiments = await Review.findAll({
       attributes: ['sentiment'],
       where: {
@@ -55,14 +49,29 @@ export async function renderReviewsPage(req, res) {
     // query conditions based on filters
     const where = {};
     
-    if (sourceFilter) {
-      where.source = sourceFilter;
-    }
-    
     if (sentimentFilter === 'pending') {
       where.sentiment = null;
     } else if (sentimentFilter) {
       where.sentiment = sentimentFilter;
+    }
+    
+    // Add date range filter if provided
+    if (startDateFilter || endDateFilter) {
+      where.time_published = {};
+      
+      if (startDateFilter) {
+        // Set to beginning of the day
+        const startDate = new Date(startDateFilter);
+        startDate.setHours(0, 0, 0, 0);
+        where.time_published[Op.gte] = startDate;
+      }
+      
+      if (endDateFilter) {
+        // Set to end of the day
+        const endDate = new Date(endDateFilter);
+        endDate.setHours(23, 59, 59, 999);
+        where.time_published[Op.lte] = endDate;
+      }
     }
     
     // Get total count for pagination with applied filters
@@ -79,8 +88,7 @@ export async function renderReviewsPage(req, res) {
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
     
-    // Create a list of distinct sources and sentiments for the filter dropdowns
-    const availableSources = sources.map(item => item.source);
+    // Create a list of distinct sentiments for the filter dropdowns
     const availableSentiments = sentiments.map(item => item.sentiment);
     
     // Render the reviews page
@@ -94,12 +102,13 @@ export async function renderReviewsPage(req, res) {
         totalCount
       },
       filters: {
-        source: sourceFilter,
-        sentiment: sentimentFilter
+        sentiment: sentimentFilter,
+        startDate: startDateFilter,
+        endDate: endDateFilter
       },
       filterOptions: {
-        sources: availableSources,
-        sentiments: availableSentiments
+        sentiments: availableSentiments,
+        sources: [] // Keep empty array to avoid template errors
       },
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page)
@@ -137,14 +146,10 @@ export async function handleCrawlRequest(req, res) {
 export async function exportReviewsToExcel(req, res) {
   try {
     // Extract filter parameters from query
-    const { source, sentiment, startDate, endDate } = req.query;
+    const { sentiment, startDate, endDate } = req.query;
     
     // Build where clause
     const where = {};
-    
-    if (source) {
-      where.source = source;
-    }
     
     if (sentiment === 'pending') {
       where.sentiment = null;
@@ -155,10 +160,14 @@ export async function exportReviewsToExcel(req, res) {
     if (startDate || endDate) {
       where.time_published = {};
       if (startDate) {
-        where.time_published[Op.gte] = new Date(startDate);
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(0, 0, 0, 0);
+        where.time_published[Op.gte] = startDateTime;
       }
       if (endDate) {
-        where.time_published[Op.lte] = new Date(endDate);
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        where.time_published[Op.lte] = endDateTime;
       }
     }
     

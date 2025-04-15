@@ -3,9 +3,9 @@
 <div class="flex-wrapper">
   <div class="container content">
     <!-- Sentiment Cards Row -->
-    <div class="row w-100 justify-content-center mt-4">
+    <div class="row justify-content-center mt-4">
       <!-- Total Data Card -->
-      <div class="col-md-2 mb-4">
+      <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
             <h6 class="card-subtitle mb-2 text-muted">Total Reviews</h6>
@@ -20,14 +20,13 @@
       <!-- Sentiment Cards -->
       <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
       <% sentimentCards.forEach(sentiment => { %>
-        <div class="col-md-2 mb-4">
+        <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-4">
           <div class="card h-100">
             <div class="card-body text-center">
               <h6 class="card-subtitle mb-2 text-muted"><%= sentiment.charAt(0).toUpperCase() + sentiment.slice(1) %></h6>
               <h3 class="card-title" id="<%= sentiment %>Count">0</h3>
               <div class="progress mt-2" style="height: 4px;">
-                <div class="progress-bar" id="<%= sentiment %>Progress" 
-                     style="width: 0%; background-color: <%= colors[sentiment] %>"></div>
+                <div class="progress-bar" id="<%= sentiment %>Progress" style="width: 0%"></div>
               </div>
             </div>
           </div>
@@ -115,6 +114,15 @@
   const availableYears = <%- JSON.stringify(availableYears) %>;
   const latestYear = "<%= latestYear %>";
   
+  // Define WCAG-compliant color mapping
+  const colors = {
+    'positif': 'rgba(46, 125, 50, 0.8)',    // Dark green - high contrast, WCAG AA compliant
+    'negatif': 'rgba(183, 28, 28, 0.8)',    // Dark red - high contrast, WCAG AA compliant
+    'netral': 'rgba(66, 66, 66, 0.8)',      // Dark gray - high contrast, WCAG AA compliant
+    'puas': 'rgba(13, 71, 161, 0.8)',       // Dark blue - high contrast, WCAG AA compliant
+    'kecewa': 'rgba(230, 81, 0, 0.8)'       // Dark orange - high contrast, WCAG AA compliant
+  };
+  
   // Get current date
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
@@ -134,21 +142,15 @@
     selectedMonth = 'all';
   }
   
-  // Color mapping for sentiment categories
-  const colors = {
-    'positif': 'rgba(75, 192, 192, 0.8)',  // Green
-    'negatif': 'rgba(255, 99, 132, 0.8)',  // Red
-    'netral': 'rgba(201, 203, 207, 0.8)',  // Gray
-    'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
-    'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
-  };
-  
   let timeSeriesChart;
   
   // Create charts and update cards
   document.addEventListener('DOMContentLoaded', function() {
     const labels = stats.labels;
     const data = labels.map(label => stats.counts[label]);
+    
+    // Apply colors to progress bars
+    applyProgressBarColors();
     
     // Update sentiment cards
     updateSentimentCards(labels, data);
@@ -165,6 +167,17 @@
     // Create time series chart with default filters
     createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
   });
+  
+  // Apply colors to progress bars
+  function applyProgressBarColors() {
+    const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa'];
+    sentimentCards.forEach(sentiment => {
+      const progressBar = document.getElementById(`${sentiment}Progress`);
+      if (progressBar) {
+        progressBar.style.backgroundColor = colors[sentiment];
+      }
+    });
+  }
   
   // Update sentiment cards with data
   function updateSentimentCards(labels, data) {

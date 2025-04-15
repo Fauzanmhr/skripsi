@@ -3,15 +3,6 @@ import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
 import moment from 'moment';
 
-// Color mapping for sentiment categories
-const colors = {
-  'positif': 'rgba(75, 192, 192, 0.8)',  // Green
-  'negatif': 'rgba(255, 99, 132, 0.8)',  // Red
-  'netral': 'rgba(201, 203, 207, 0.8)',  // Gray
-  'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
-  'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
-};
-
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {
   try {
@@ -229,7 +220,6 @@ export async function renderDashboard(req, res) {
       monthlyDetailData: monthlyDetailData,
       availableYears: formattedYears,
       latestYear: latestYear,
-      colors: colors,
       page: 'dashboard'
     });
   } catch (error) {
