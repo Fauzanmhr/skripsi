@@ -89,6 +89,29 @@ export async function renderDashboard(req, res) {
       raw: true
     });
 
+    // Get detailed monthly data (for each day of each month)
+    const monthlyDetailData = await Review.findAll({
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'), 'year_month'],
+        [sequelize.fn('DAY', sequelize.col('time_published')), 'day'],
+        'sentiment',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        sentiment: { [Op.not]: null }
+      },
+      group: [
+        sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'),
+        sequelize.fn('DAY', sequelize.col('time_published')),
+        'sentiment'
+      ],
+      order: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('time_published'), '%Y-%m'), 'ASC'],
+        [sequelize.fn('DAY', sequelize.col('time_published')), 'ASC']
+      ],
+      raw: true
+    });
+    
     // Process data for charts
     const sentimentLabels = ['positif', 'negatif', 'netral', 'puas', 'kecewa'];
     const counts = Object.fromEntries(sentimentLabels.map(label => [label, 0]));
@@ -203,6 +226,7 @@ export async function renderDashboard(req, res) {
         labels: formattedYears,
         series: yearlyData
       },
+      monthlyDetailData: monthlyDetailData,
       availableYears: formattedYears,
       latestYear: latestYear,
       colors: colors,

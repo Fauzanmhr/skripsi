@@ -1,4 +1,5 @@
 <%- include('partials/header', { title: title, page: page }) %>
+
 <div class="flex-wrapper">
   <div class="container content">
     <!-- Sentiment Cards Row -->
@@ -57,19 +58,33 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Sentiment Trends Over Time</h5>
             <div class="d-flex align-items-center">
-              <div class="btn-group me-3" role="group" aria-label="Time period selector">
-                <button type="button" class="btn btn-outline-primary active" data-period="week">Week</button>
-                <button type="button" class="btn btn-outline-primary" data-period="month">Month</button>
-                <button type="button" class="btn btn-outline-primary" data-period="year">Year</button>
+              <!-- Month filter dropdown -->
+              <div class="dropdown me-3">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="monthDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span id="selectedMonthLabel">Loading...</span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="monthDropdown" id="monthDropdownMenu">
+                  <li><a class="dropdown-item" href="#" data-month="all">All Months</a></li>
+                  <% for(let i = 1; i <= 12; i++) { %>
+                    <li>
+                      <a class="dropdown-item" href="#" data-month="<%= i.toString().padStart(2, '0') %>">
+                        <%= new Date(0, i-1).toLocaleString('default', { month: 'long' }) %>
+                      </a>
+                    </li>
+                  <% } %>
+                </ul>
               </div>
+              
+              <!-- Year filter dropdown -->
               <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <span id="selectedYearLabel"><%= latestYear %></span>
+                  <span id="selectedYearLabel">Loading...</span>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="yearDropdown" id="yearDropdownMenu">
+                  <li><a class="dropdown-item" href="#" data-year="all">All Years</a></li>
                   <% availableYears.forEach(year => { %>
                     <li>
-                      <a class="dropdown-item <%= year === latestYear ? 'active' : '' %>" href="#" data-year="<%= year %>">
+                      <a class="dropdown-item" href="#" data-year="<%= year %>">
                         <%= year %>
                       </a>
                     </li>
@@ -88,19 +103,37 @@
     </div>
   </div>
 </div>
+
 <%- include('./partials/footer') %>
+
 <!-- Scripts -->
 <script src="/js/chart.umd.js"></script>
 <script>
   // Get data from server
   const stats = <%- JSON.stringify(stats) %>;
-  const timeSeriesData = <%- JSON.stringify(timeSeriesData) %>;
-  const weeklyData = <%- JSON.stringify(weeklyData) %>;
-  const monthlyData = <%- JSON.stringify(monthlyData) %>;
-  const yearlyData = <%- JSON.stringify(yearlyData) %>;
+  const monthlyDetailData = <%- JSON.stringify(monthlyDetailData) %>;
   const availableYears = <%- JSON.stringify(availableYears) %>;
   const latestYear = "<%= latestYear %>";
-
+  
+  // Get current date
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear().toString();
+  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+  
+  // Set initial values to current month and year, fallback to latest data if current not available
+  let selectedYear = availableYears.includes(currentYear) ? currentYear : latestYear;
+  let selectedMonth = currentMonth;
+  
+  // Check if data exists for current month, otherwise default to 'all'
+  let currentMonthHasData = monthlyDetailData.some(item => {
+    const [itemYear, itemMonth] = item.year_month.split('-');
+    return itemYear === selectedYear && itemMonth === selectedMonth;
+  });
+  
+  if (!currentMonthHasData) {
+    selectedMonth = 'all';
+  }
+  
   // Color mapping for sentiment categories
   const colors = {
     'positif': 'rgba(75, 192, 192, 0.8)',  // Green
@@ -109,11 +142,9 @@
     'puas': 'rgba(54, 162, 235, 0.8)',     // Blue
     'kecewa': 'rgba(255, 159, 64, 0.8)'    // Orange
   };
-
+  
   let timeSeriesChart;
-  let currentPeriod = 'week';
-  let currentYear = latestYear;
-
+  
   // Create charts and update cards
   document.addEventListener('DOMContentLoaded', function() {
     const labels = stats.labels;
@@ -125,16 +156,16 @@
     // Create sentiment chart
     createSentimentChart(labels, data);
     
-    // Setup year dropdown
+    // Setup year dropdown with current year selected
     setupYearDropdown();
     
-    // Create time series chart (default to weekly view of latest year)
-    createTimeSeriesChart(labels, currentPeriod, currentYear);
+    // Setup month dropdown with current month selected
+    setupMonthDropdown();
     
-    // Setup time period buttons
-    setupTimePeriodButtons();
+    // Create time series chart with default filters
+    createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
   });
-
+  
   // Update sentiment cards with data
   function updateSentimentCards(labels, data) {
     const totalReviews = data.reduce((sum, current) => sum + current, 0);
@@ -156,7 +187,7 @@
       progressBar.setAttribute('aria-valuenow', percentage);
     });
   }
-
+  
   // Create sentiment distribution chart
   function createSentimentChart(labels, data) {
     const backgroundColors = labels.map(label => colors[label]);
@@ -196,13 +227,23 @@
       }
     });
   }
-
+  
   // Setup year dropdown
   function setupYearDropdown() {
     const yearDropdownItems = document.querySelectorAll('#yearDropdownMenu .dropdown-item');
     const selectedYearLabel = document.getElementById('selectedYearLabel');
     
+    // Set the initial year in the UI
+    selectedYearLabel.textContent = selectedYear;
+    
+    // Mark the current year as active in the dropdown
     yearDropdownItems.forEach(item => {
+      if (item.dataset.year === selectedYear) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+      
       item.addEventListener('click', function(e) {
         e.preventDefault();
         
@@ -213,66 +254,202 @@
         this.classList.add('active');
         
         // Update selected year and label
-        currentYear = this.dataset.year;
-        selectedYearLabel.textContent = currentYear;
+        selectedYear = this.dataset.year;
+        selectedYearLabel.textContent = selectedYear === 'all' ? 'All Years' : selectedYear;
+        
+        // If "All Years" is selected, automatically set month to "All Months"
+        if (selectedYear === 'all') {
+          selectedMonth = 'all';
+          
+          // Update the month dropdown UI
+          const monthDropdownItems = document.querySelectorAll('#monthDropdownMenu .dropdown-item');
+          monthDropdownItems.forEach(i => i.classList.remove('active'));
+          document.querySelector('#monthDropdownMenu [data-month="all"]').classList.add('active');
+          document.getElementById('selectedMonthLabel').textContent = 'All Months';
+          
+          // Disable month dropdown when viewing all years
+          document.getElementById('monthDropdown').classList.add('disabled');
+          document.getElementById('monthDropdown').setAttribute('disabled', 'disabled');
+        } else {
+          // Re-enable month dropdown
+          document.getElementById('monthDropdown').classList.remove('disabled');
+          document.getElementById('monthDropdown').removeAttribute('disabled');
+        }
         
         // Refresh chart
-        createTimeSeriesChart(stats.labels, currentPeriod, currentYear);
+        createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
       });
     });
   }
-
-  // Create time series chart
-  function createTimeSeriesChart(labels, period = 'week', year = null) {
-    currentPeriod = period;
-    if (year) currentYear = year;
+  
+  // Setup month dropdown
+  function setupMonthDropdown() {
+    const monthDropdownItems = document.querySelectorAll('#monthDropdownMenu .dropdown-item');
+    const selectedMonthLabel = document.getElementById('selectedMonthLabel');
     
-    // Choose the right data based on period
-    let chartData;
-    switch(period) {
-      case 'week':
-        chartData = weeklyData;
-        break;
-      case 'month':
-        chartData = monthlyData;
-        break;
-      case 'year':
-        chartData = yearlyData;
-        break;
-      default:
-        chartData = weeklyData;
+    // Set the initial month in the UI
+    if (selectedMonth === 'all') {
+      selectedMonthLabel.textContent = 'All Months';
+    } else {
+      const monthIndex = parseInt(selectedMonth) - 1;
+      selectedMonthLabel.textContent = new Date(0, monthIndex).toLocaleString('default', { month: 'long' });
     }
     
-    // Filter data by year if needed (for week and month views)
-    if (period !== 'year' && year) {
-      const filteredLabels = [];
-      const filteredSeries = {};
+    // Mark the current month as active in the dropdown
+    monthDropdownItems.forEach(item => {
+      if (item.dataset.month === selectedMonth) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
       
-      labels.forEach(sentiment => {
-        filteredSeries[sentiment] = [];
-      });
-      
-      chartData.labels.forEach((label, index) => {
-        if (label.includes(year)) {
-          filteredLabels.push(label);
-          labels.forEach(sentiment => {
-            filteredSeries[sentiment].push(chartData.series[sentiment][index]);
-          });
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // If all years is selected, don't allow month selection
+        if (selectedYear === 'all') {
+          return;
         }
+        
+        // Remove active class from all items
+        monthDropdownItems.forEach(i => i.classList.remove('active'));
+        
+        // Add active class to clicked item
+        this.classList.add('active');
+        
+        // Update selected month and label
+        selectedMonth = this.dataset.month;
+        
+        if (selectedMonth === 'all') {
+          selectedMonthLabel.textContent = 'All Months';
+        } else {
+          const monthIndex = parseInt(selectedMonth) - 1;
+          const monthName = new Date(0, monthIndex).toLocaleString('default', { month: 'long' });
+          selectedMonthLabel.textContent = monthName;
+        }
+        
+        // Refresh chart
+        createTimeSeriesChart(stats.labels, selectedMonth, selectedYear);
+      });
+    });
+  }
+  
+  // Create time series chart
+  function createTimeSeriesChart(labels, month = 'all', year = null) {
+    if (year) selectedYear = year;
+    if (month) selectedMonth = month;
+    
+    let chartLabels;
+    const chartData = {};
+    
+    // Handle "All Years" selection
+    if (selectedYear === 'all') {
+      // Get data by year
+      const yearlyData = {};
+      
+      // Group all data by year and sentiment
+      monthlyDetailData.forEach(item => {
+        const itemYear = item.year_month.split('-')[0];
+        
+        if (!yearlyData[itemYear]) {
+          yearlyData[itemYear] = {};
+        }
+        
+        if (!yearlyData[itemYear][item.sentiment]) {
+          yearlyData[itemYear][item.sentiment] = 0;
+        }
+        
+        yearlyData[itemYear][item.sentiment] += parseInt(item.count);
       });
       
-      chartData = {
-        labels: filteredLabels,
-        series: filteredSeries
-      };
+      // Sort years
+      const years = Object.keys(yearlyData).sort();
+      chartLabels = years;
+      
+      // Initialize data structure
+      labels.forEach(sentiment => {
+        chartData[sentiment] = years.map(year => 
+          yearlyData[year] && yearlyData[year][sentiment] ? yearlyData[year][sentiment] : 0
+        );
+      });
+    } else {
+      // Filter data based on selected year
+      let filteredData = monthlyDetailData.filter(item => {
+        const itemYear = item.year_month.split('-')[0];
+        return itemYear === selectedYear;
+      });
+      
+      if (selectedMonth === 'all') {
+        // Show data for all months in selected year
+        chartLabels = Array.from({length: 12}, (_, i) => {
+          const monthIndex = i;
+          return new Date(parseInt(selectedYear), monthIndex).toLocaleString('default', { month: 'short' });
+        });
+        
+        // Initialize data structure
+        labels.forEach(sentiment => {
+          chartData[sentiment] = Array(12).fill(0);
+        });
+        
+        // Group data by month and sentiment
+        const monthlySums = {};
+        
+        filteredData.forEach(item => {
+          const itemMonth = item.year_month.split('-')[1];
+          const monthIndex = parseInt(itemMonth) - 1; // Convert to 0-based index
+          
+          if (!monthlySums[monthIndex]) {
+            monthlySums[monthIndex] = {};
+          }
+          
+          if (!monthlySums[monthIndex][item.sentiment]) {
+            monthlySums[monthIndex][item.sentiment] = 0;
+          }
+          
+          monthlySums[monthIndex][item.sentiment] += parseInt(item.count);
+        });
+        
+        // Fill in the data for the chart
+        for (const monthIndex in monthlySums) {
+          for (const sentiment in monthlySums[monthIndex]) {
+            if (labels.includes(sentiment)) {
+              chartData[sentiment][monthIndex] = monthlySums[monthIndex][sentiment];
+            }
+          }
+        }
+      } else {
+        // Show data for selected month
+        const monthIndex = parseInt(selectedMonth) - 1;
+        chartLabels = [new Date(parseInt(selectedYear), monthIndex).toLocaleString('default', { month: 'long' })];
+        
+        // Group data by sentiment for the selected month
+        const sentimentSums = {};
+        
+        filteredData.forEach(item => {
+          const itemMonth = item.year_month.split('-')[1];
+          
+          if (itemMonth === selectedMonth) {
+            if (!sentimentSums[item.sentiment]) {
+              sentimentSums[item.sentiment] = 0;
+            }
+            
+            sentimentSums[item.sentiment] += parseInt(item.count);
+          }
+        });
+        
+        // Set up chart data
+        labels.forEach(sentiment => {
+          chartData[sentiment] = [sentimentSums[sentiment] || 0];
+        });
+      }
     }
     
     const datasets = labels.map(sentiment => {
       return {
         label: sentiment.charAt(0).toUpperCase() + sentiment.slice(1),
-        data: chartData.series[sentiment],
+        data: chartData[sentiment],
         borderColor: colors[sentiment].replace('0.8', '1'),
-        backgroundColor: colors[sentiment].replace('0.8', '0.1'),
+        backgroundColor: colors[sentiment].replace('0.8', '0.2'),
         borderWidth: 2,
         tension: 0.3,
         fill: true,
@@ -286,10 +463,18 @@
       timeSeriesChart.destroy();
     }
     
+    // Determine chart type based on context
+    let chartType;
+    if (selectedYear === 'all' || (selectedMonth === 'all' && selectedYear !== 'all')) {
+      chartType = 'line';
+    } else {
+      chartType = 'bar';
+    }
+    
     timeSeriesChart = new Chart(timeSeriesCtx, {
-      type: 'line',
+      type: chartType,
       data: {
-        labels: chartData.labels,
+        labels: chartLabels,
         datasets: datasets
       },
       options: {
@@ -326,25 +511,6 @@
           }
         }
       }
-    });
-  }
-
-  // Setup time period buttons
-  function setupTimePeriodButtons() {
-    const buttons = document.querySelectorAll('[data-period]');
-    
-    buttons.forEach(button => {
-      button.addEventListener('click', function() {
-        // Remove active class from all buttons
-        buttons.forEach(btn => btn.classList.remove('active'));
-        
-        // Add active class to clicked button
-        this.classList.add('active');
-        
-        // Update chart
-        const period = this.getAttribute('data-period');
-        createTimeSeriesChart(stats.labels, period, currentYear);
-      });
     });
   }
 </script>
