@@ -175,34 +175,56 @@
     const backgroundColors = labels.map(label => colors[label]);
     const ctx = document.getElementById(chartId).getContext('2d');
     
+    // Use different chart types based on the chart ID
+    const chartType = chartId === 'filteredSentimentChart' ? 'pie' : 'bar';
+    
+    // Different dataset configuration based on chart type
+    const datasets = chartType === 'pie' ? 
+      // For pie chart, use a single dataset
+      [{
+        label: 'Number of Reviews',
+        data: data,
+        backgroundColor: backgroundColors,
+        borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+        borderWidth: 1,
+        hoverOffset: 15
+      }] : 
+      // For bar chart, create individual datasets so sentiment names show in legend
+      labels.map((label, index) => ({
+        label: label.charAt(0).toUpperCase() + label.slice(1),
+        data: [data[index]],  // Single data point for this sentiment
+        backgroundColor: backgroundColors[index],
+        borderColor: backgroundColors[index].replace('0.8', '1'),
+        borderWidth: 1,
+        barPercentage: 0.7,
+        categoryPercentage: 0.9
+      }));
+    
     new Chart(ctx, {
-      type: 'bar',
+      type: chartType === 'pie' ? 'pie' : 'bar',
       data: {
-        labels: labels,
-        datasets: [{
-          label: 'Number of Reviews',
-          data: data,
-          backgroundColor: backgroundColors,
-          borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
-          borderWidth: 1
-        }]
+        labels: chartType === 'pie' ? 
+          labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)) : 
+          ['Sentiment Distribution'],  // Single category for bar chart
+        datasets: datasets
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          animateRotate: true,
+          animateScale: true
+        },
         onClick: (event, elements) => {
           if (elements.length > 0) {
             const index = elements[0].index;
             const sentiment = labels[index];
             // For filtered chart, include date range in the URL
             if (chartId === 'filteredSentimentChart') {
-              // Properly calculate first and last day of month, accounting for timezone issues
-              
               // Create first day of month: YYYY-MM-01
               const firstDay = `${filters.selectedYear}-${String(filters.selectedMonth).padStart(2, '0')}-01`;
               
               // Calculate last day of month correctly
-              // Using the fact that day 0 of next month is the last day of current month
               const lastDayDate = new Date(filters.selectedYear, filters.selectedMonth, 0);
               const lastDay = `${filters.selectedYear}-${String(filters.selectedMonth).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
               
@@ -216,23 +238,42 @@
         plugins: {
           title: {
             display: true,
-            text: `Sentiment Distribution - ${periodLabel}`
+            text: `${periodLabel} Sentiment Analysis`,
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
           },
-          legend: { display: false },
+          legend: { 
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 15,
+              font: {
+                size: 12
+              }
+            }
+          },
           tooltip: {
             callbacks: {
               label: function(context) {
-                return `Reviews: ${context.raw}`;
+                const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
+                return `${context.raw} reviews (${percentage}%)`;
+              },
+              title: function(context) {
+                return context[0].label;
               }
             }
           }
         },
-        scales: {
+        scales: chartType === 'bar' ? {
           y: {
             beginAtZero: true,
             ticks: { precision: 0 }
           }
-        }
+        } : undefined
       }
     });
   }
