@@ -6,7 +6,7 @@ import re
 import nltk
 import sastrawi
 import emoji
-import time
+import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -74,13 +74,13 @@ async def translate(text: str) -> str:
             )
             translated = translator.translate(text)
             translation_cache[text] = translated
-            time.sleep(DELAY_SUCCESS)  # Pembatasan rate
+            await asyncio.sleep(DELAY_SUCCESS)  # Pembatasan rate
             print(f"Translated: '{text[:50]}...' → '{translated[:50]}...'")
             return translated
         except Exception as e:
             wait_time = DELAY_FAILURE * (attempt + 1)
             print(f"Percobaan {attempt+1} gagal (Menunggu {wait_time}s): {str(e)[:100]}...")
-            time.sleep(wait_time)
+            await asyncio.sleep(wait_time)
     
     # Kembalikan teks asli jika semua percobaan gagal
     translation_cache[text] = text
@@ -98,8 +98,7 @@ async def preprocess_text(text):
     tokens = word_tokenize(text)  # Tokenisasi
     tokens = [normalize_dict.get(word, word) for word in tokens]  # Normalisasi slang
     tokens = [stemmer.stem(token) for token in tokens]  # Stemming kata
-    tokens = [word for word in tokens if word != "nya"]  # Hapus kata "nya"
-    tokens = [word for word in tokens if word]  # Hapus kata kosong
+    tokens = [word for word in tokens if word]  # Hapus tokens kosong
     return ' '.join(tokens)
 
 # Model untuk request input
