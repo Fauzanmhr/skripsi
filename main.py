@@ -91,7 +91,7 @@ async def translate(text: str) -> str:
 async def preprocess_text(text):
     text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
     text = await translate(text)  # Menggunakan DeepL
-    text = emoji.demojize(text, language='id')
+    text = emoji.demojize(text, language='id')  # Konversi emoji ke teks
     text = text.lower().strip()  # Konversi ke huruf kecil dan hapus spasi
     text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Hapus mention & URL
     text = re.sub(r'(.)\1{2,}', r'\1', text)  # Hapus karakter berulang
