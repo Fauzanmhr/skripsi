@@ -217,8 +217,19 @@
         },
         onClick: (event, elements) => {
           if (elements.length > 0) {
-            const index = elements[0].index;
-            const sentiment = labels[index];
+            let sentiment;
+            
+            // Different handling for pie vs bar charts
+            if (chartType === 'pie') {
+              // For pie charts, get sentiment from the index
+              const index = elements[0].index;
+              sentiment = labels[index];
+            } else {
+              // For bar charts, get sentiment from the dataset index
+              const datasetIndex = elements[0].datasetIndex;
+              sentiment = labels[datasetIndex];
+            }
+            
             // For filtered chart, include date range in the URL
             if (chartId === 'filteredSentimentChart') {
               // Create first day of month: YYYY-MM-01
