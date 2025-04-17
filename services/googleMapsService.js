@@ -25,10 +25,7 @@ export async function fetchReviews(googleMapsURL) {
     
     // Filter and map reviews
     return parsedReviews
-      .filter(review => 
-        review.review?.text?.trim() && 
-        ['id', 'en'].includes(review.review?.language)
-      )
+      .filter(review => review.review?.text?.trim())
       .map(review => ({
         id: review.review_id,
         review: cleanText(review.review.text),
