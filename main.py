@@ -5,7 +5,6 @@ import pandas as pd
 import re
 import nltk
 import sastrawi
-import emoji
 import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -90,9 +89,8 @@ async def translate(text: str) -> str:
 async def preprocess_text(text):
     text = await translate(text)  # Menggunakan DeepL
     text = text.lower().strip()  # Konversi ke huruf kecil dan hapus spasi
-    text = emoji.demojize(text, language='id')  # Konversi emoji ke teks
     text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Hapus mention & URL
-    text = re.sub(r'(.)\1+', r'\1', text)  # Hapus karakter berulang
+    text = re.sub(r'(.)\1{2,}', r'\1', text)  # Hapus karakter berulang
     text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Hapus non-alfabet
     text = re.sub(r'\s+', ' ', text).strip()  # Hapus spasi berlebih
     tokens = word_tokenize(text)  # Tokenisasi
