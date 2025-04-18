@@ -79,6 +79,51 @@
     </div>
   </div>
 
+  <!-- Auto Scrape Settings Modal -->
+  <div class="modal fade" id="autoScrapeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Auto Scrape Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="autoScrapeForm" class="row g-3">
+            <div class="col-12">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="autoScrapeEnabled" name="enabled">
+                <label class="form-check-label" for="autoScrapeEnabled">Enable Auto Scrape</label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                When enabled, reviews will automatically be scraped every day at midnight.
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <label for="lastScrape" class="form-label">Last Automatic Scrape</label>
+              <input type="text" class="form-control" id="lastScrape" readonly disabled>
+            </div>
+            <div class="col-12">
+              <label for="nextScrape" class="form-label">Next Scheduled Scrape</label>
+              <input type="text" class="form-control" id="nextScrape" readonly disabled>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="saveAutoScrape" class="btn btn-primary">
+            <span class="spinner-border spinner-border-sm d-none" id="autoScrapeSpinner"></span>
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="container content">
     <div class="mt-4 d-flex justify-content-between align-items-center mb-4">
       <h2 class="fw-bold"></h2>
@@ -86,6 +131,10 @@
         <button id="exportButton" class="btn btn-success d-flex align-items-center">
           <i class="bi bi-file-earmark-excel me-2"></i>
           Export to Excel
+        </button>
+        <button id="autoScrapeButton" class="btn btn-outline-primary d-flex align-items-center">
+          <i class="bi bi-clock-history me-2"></i>
+          <span id="autoScrapeStatus">Auto Scrape</span>
         </button>
         <button id="crawlButton" class="btn btn-primary d-flex align-items-center">
           <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="crawlSpinner"></span>
@@ -240,6 +289,9 @@
     
     // Set up export button
     setupExportButton();
+    
+    // Set up auto scrape button
+    setupAutoScrape();
 
     // Reload page when modal is closed
     const loadingModal = document.getElementById('loadingModal');
@@ -374,6 +426,109 @@
     } finally {
       button.disabled = false;
       spinner.classList.add('d-none');
+    }
+  }
+  
+  function setupAutoScrape() {
+    // Open modal with current settings
+    document.getElementById('autoScrapeButton').addEventListener('click', async function() {
+      try {
+        const response = await fetch('/reviews/auto-scrape-settings');
+        const settings = await response.json();
+        
+        // Populate the form with current settings
+        document.getElementById('autoScrapeEnabled').checked = settings.enabled;
+        
+        // Show last and next scrape times
+        if (settings.lastScrape) {
+          document.getElementById('lastScrape').value = new Date(settings.lastScrape).toLocaleString();
+        } else {
+          document.getElementById('lastScrape').value = 'Never';
+        }
+        
+        if (settings.nextScrape && settings.enabled) {
+          document.getElementById('nextScrape').value = new Date(settings.nextScrape).toLocaleString();
+        } else {
+          document.getElementById('nextScrape').value = 'Not scheduled';
+        }
+        
+        // Update status button
+        updateAutoScrapeStatusButton(settings.enabled);
+        
+      } catch (error) {
+        console.error('Failed to fetch auto scrape settings:', error);
+      }
+      
+      const autoScrapeModal = new bootstrap.Modal(document.getElementById('autoScrapeModal'));
+      autoScrapeModal.show();
+    });
+    
+    // Save settings
+    document.getElementById('saveAutoScrape').addEventListener('click', async function() {
+      const spinner = document.getElementById('autoScrapeSpinner');
+      const button = this;
+      const modal = bootstrap.Modal.getInstance(document.getElementById('autoScrapeModal'));
+      
+      try {
+        // Show loading state
+        button.disabled = true;
+        spinner.classList.remove('d-none');
+        
+        const formData = {
+          enabled: document.getElementById('autoScrapeEnabled').checked
+        };
+        
+        const response = await fetch('/reviews/auto-scrape-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          // Update status button
+          updateAutoScrapeStatusButton(formData.enabled);
+          modal.hide();
+        } else {
+          alert(result.message || 'Failed to save settings');
+        }
+        
+      } catch (error) {
+        console.error('Failed to save auto scrape settings:', error);
+        alert('An error occurred while saving settings');
+      } finally {
+        button.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    });
+    
+    // Load current status
+    loadAutoScrapeStatus();
+  }
+  
+  async function loadAutoScrapeStatus() {
+    try {
+      const response = await fetch('/reviews/auto-scrape-settings');
+      const settings = await response.json();
+      updateAutoScrapeStatusButton(settings.enabled);
+    } catch (error) {
+      console.error('Failed to load auto scrape status:', error);
+    }
+  }
+  
+  function updateAutoScrapeStatusButton(enabled) {
+    const button = document.getElementById('autoScrapeButton');
+    const status = document.getElementById('autoScrapeStatus');
+    
+    if (enabled) {
+      button.classList.remove('btn-outline-primary');
+      button.classList.add('btn-outline-success');
+      status.textContent = 'Auto Scrape: ON';
+    } else {
+      button.classList.remove('btn-outline-success');
+      button.classList.add('btn-outline-primary');
+      status.textContent = 'Auto Scrape: OFF';
     }
   }
 </script>

@@ -2,6 +2,7 @@ import Review from '../models/review.js';
 import { crawlAndSaveReviews } from '../services/googleMapsService.js';
 import { Op } from 'sequelize';
 import { generateReviewsExcel } from '../services/exportService.js';
+import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -199,6 +200,52 @@ export async function exportReviewsToExcel(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to export reviews',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+}
+
+// Controller to get auto scrape settings
+export async function getAutoScrapeSettings(req, res) {
+  try {
+    const settings = getSettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error getting auto scrape settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get auto scrape settings',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+}
+
+// Controller to update auto scrape settings
+export async function updateAutoScrapeSettings(req, res) {
+  try {
+    const { enabled } = req.body;
+    
+    // Validate input
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Enabled status must be a boolean' 
+      });
+    }
+    
+    // Update settings
+    const updatedSettings = await saveSettings({ enabled });
+    
+    res.json({
+      success: true,
+      message: `Auto scrape ${enabled ? 'enabled' : 'disabled'}`,
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating auto scrape settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update auto scrape settings',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }

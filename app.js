@@ -7,6 +7,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import analyzeRoutes from './routes/analyzeRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
+import { initAutoScrapeService } from './services/autoScrapeService.js';
 import { sequelize } from './config/database.js';
 
 // Get __dirname equivalent in ES module
@@ -67,6 +68,9 @@ async function startServer() {
     
     // Start the sentiment analysis background job
     startSentimentAnalysisJob();
+    
+    // Initialize auto scrape service
+    initAutoScrapeService();
     
     // Start the server
     app.listen(PORT, () => {
