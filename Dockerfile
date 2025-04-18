@@ -2,6 +2,10 @@
 FROM python:3.12-slim
 LABEL authors="ZAN"
 
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /app
 
