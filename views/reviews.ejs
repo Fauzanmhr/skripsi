@@ -27,58 +27,6 @@
     </div>
   </div>
 
-  <!-- Export Modal -->
-  <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Export Reviews to Excel</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="exportForm" class="row g-3">
-            <div class="col-12">
-              <div class="input-group">
-                <span class="input-group-text">Sentiment</span>
-                <select name="sentiment" class="form-select" aria-label="Filter by sentiment for export">
-                  <option value="">All Sentiments</option>
-                  <% filterOptions.sentiments.forEach(sentiment => { %>
-                    <option value="<%= sentiment %>"><%= sentiment %></option>
-                  <% }); %>
-                  <option value="pending">Pending</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Date Range</label>
-              <div class="row g-2">
-                <div class="col-6">
-                  <div class="input-group">
-                    <span class="input-group-text">From</span>
-                    <input type="date" name="startDate" class="form-control" aria-label="Start date for export">
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="input-group">
-                    <span class="input-group-text">To</span>
-                    <input type="date" name="endDate" class="form-control" aria-label="End date for export">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" id="confirmExport" class="btn btn-primary">
-            <span class="spinner-border spinner-border-sm d-none" id="exportSpinner"></span>
-            Export
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Auto Scrape Settings Modal -->
   <div class="modal fade" id="autoScrapeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -128,10 +76,6 @@
     <div class="mt-4 d-flex justify-content-between align-items-center mb-4">
       <h2 class="fw-bold"></h2>
       <div class="d-flex gap-2">
-        <button id="exportButton" class="btn btn-success d-flex align-items-center">
-          <i class="bi bi-file-earmark-excel me-2"></i>
-          Export to Excel
-        </button>
         <button id="autoScrapeButton" class="btn btn-outline-primary d-flex align-items-center">
           <i class="bi bi-clock-history me-2"></i>
           <span id="autoScrapeStatus">Auto Scrape</span>
@@ -145,43 +89,48 @@
     
     <div class="card shadow-sm mb-5">
       <div class="card-header py-3">
-        <div class="row g-3 align-items-center">
-          <div class="col-12 col-md-4 col-lg-3">
-            <h5 class="mb-0">Review List</h5>
+        <h5 class="mb-0">Review List</h5>
+      </div>
+      <div class="card-header bg-light py-3">
+        <form id="filterForm" class="row g-2 align-items-center justify-content-center" method="GET">
+          <input type="hidden" name="page" value="1">
+          <div class="col-12 col-sm-auto">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">Sentiment</span>
+              <select name="sentiment" class="form-select" aria-label="Filter by sentiment">
+                <option value="">All Sentiments</option>
+                <% filterOptions.sentiments.forEach(sentiment => { %>
+                  <option value="<%= sentiment %>" <%= filters.sentiment === sentiment ? 'selected' : '' %>><%= sentiment %></option>
+                <% }); %>
+                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Pending</option>
+              </select>
+            </div>
           </div>
-          <div class="col-12 col-md-8 col-lg-9">
-            <form id="filterForm" class="row g-2 align-items-center" method="GET">
-              <input type="hidden" name="page" value="1">
-              <div class="col-12 col-sm-auto">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text">Sentiment</span>
-                  <select name="sentiment" class="form-select" aria-label="Filter by sentiment">
-                    <option value="">All Sentiments</option>
-                    <% filterOptions.sentiments.forEach(sentiment => { %>
-                      <option value="<%= sentiment %>" <%= filters.sentiment === sentiment ? 'selected' : '' %>><%= sentiment %></option>
-                    <% }); %>
-                    <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Pending</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-12 col-sm-auto">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text">From</span>
-                  <input type="date" name="startDate" class="form-control" value="<%= filters.startDate || '' %>" aria-label="Start date">
-                </div>
-              </div>
-              <div class="col-12 col-sm-auto">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text">To</span>
-                  <input type="date" name="endDate" class="form-control" value="<%= filters.endDate || '' %>" aria-label="End date">
-                </div>
-              </div>
-              <div class="col-auto">
-                <a href="/reviews" class="btn btn-sm btn-secondary">Reset</a>
-              </div>
-            </form>
+          <div class="col-12 col-sm-auto">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">From</span>
+              <input type="date" name="startDate" class="form-control" value="<%= filters.startDate || '' %>" aria-label="Start date">
+            </div>
           </div>
-        </div>
+          <div class="col-12 col-sm-auto">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">To</span>
+              <input type="date" name="endDate" class="form-control" value="<%= filters.endDate || '' %>" aria-label="End date">
+            </div>
+          </div>
+          <% if (filters.sentiment || filters.startDate || filters.endDate) { %>
+          <div class="col-auto">
+            <a href="/reviews" class="btn btn-sm btn-secondary">Reset</a>
+          </div>
+          <% } %>
+          <div class="col-12 col-sm-auto">
+            <button id="exportButton" class="btn btn-sm btn-success d-flex align-items-center">
+              <i class="bi bi-file-earmark-excel me-2"></i>
+              <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="exportSpinner"></span>
+              Export
+            </button>
+          </div>
+        </form>
       </div>
       <div class="card-body p-4">
         <div class="table-responsive" style="height: 600px; overflow-y: auto;">
@@ -327,12 +276,7 @@
   }
   
   function setupExportButton() {
-    document.getElementById('exportButton').addEventListener('click', function() {
-      const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
-      exportModal.show();
-    });
-    document.getElementById('confirmExport').addEventListener('click', async function() {
-      const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+    document.getElementById('exportButton').addEventListener('click', async function() {
       const spinner = document.getElementById('exportSpinner');
       const button = this;
       
@@ -341,21 +285,20 @@
         button.disabled = true;
         spinner.classList.remove('d-none');
         
-        // Get form data
-        const form = document.getElementById('exportForm');
-        const formData = new FormData(form);
-        const params = new URLSearchParams(formData).toString();
+        // Get current filters from the filter form
+        const currentFilters = new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
         
-        // Trigger download
-        window.location.href = `/reviews/export?${params}`;
+        // Trigger download using current filters
+        window.location.href = `/reviews/export?${currentFilters}`;
         
       } catch (error) {
         console.error('Export failed:', error);
         alert('Export failed. Please try again.');
       } finally {
-        exportModal.hide();
-        button.disabled = false;
-        spinner.classList.add('d-none');
+        setTimeout(() => {
+          button.disabled = false;
+          spinner.classList.add('d-none');
+        }, 1000);
       }
     });
   }
