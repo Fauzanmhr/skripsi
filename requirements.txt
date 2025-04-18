@@ -39,6 +39,7 @@ pydantic==2.11.1
 pydantic_core==2.33.0
 PySastrawi @ git+https://github.com/har07/PySastrawi.git@16de9085257d9492662cd150519b852b2eb24c4c
 python-dateutil==2.9.0.post0
+python-dotenv==1.1.0
 pytz==2025.2
 PyYAML==6.0.2
 regex==2024.11.6

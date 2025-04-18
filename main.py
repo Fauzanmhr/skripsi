@@ -14,9 +14,11 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from deep_translator import DeeplTranslator
 from nltk.tokenize import word_tokenize
 from lingua import Language, LanguageDetectorBuilder
+from dotenv import load_dotenv
 import os
 
 # Inisialisasi aplikasi FastAPI
+load_dotenv()
 app = FastAPI()
 
 # Konfigurasi DeepL
@@ -132,5 +134,5 @@ async def predict_sentiment(input_text: TextInput):
 
 # Menjalankan aplikasi
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
