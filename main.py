@@ -14,6 +14,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from deep_translator import DeeplTranslator
 from nltk.tokenize import word_tokenize
 from lingua import Language, LanguageDetectorBuilder
+import os
 
 # Inisialisasi aplikasi FastAPI
 app = FastAPI()
@@ -107,6 +108,10 @@ async def preprocess_text(text):
 class TextInput(BaseModel):
     text: str
 
+@app.head("/")
+async def head():
+    return {"message": "API berjalan"}
+
 # Endpoint root
 @app.get("/")
 async def root():
@@ -127,4 +132,5 @@ async def predict_sentiment(input_text: TextInput):
 
 # Menjalankan aplikasi
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
