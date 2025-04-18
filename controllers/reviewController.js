@@ -108,8 +108,7 @@ export async function renderReviewsPage(req, res) {
         endDate: endDateFilter
       },
       filterOptions: {
-        sentiments: availableSentiments,
-        sources: [] // Keep empty array to avoid template errors
+        sentiments: availableSentiments
       },
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page)
