@@ -109,7 +109,7 @@ class TextInput(BaseModel):
 
 # Endpoint root
 @app.get("/")
-def root():
+async def root():
     return {"message": "API berjalan"}
 
 # Endpoint untuk prediksi sentimen
