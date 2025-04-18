@@ -5,6 +5,7 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
 deep-translator==1.11.4
+emoji==2.14.1
 fastapi==0.115.12
 filelock==3.18.0
 fsspec==2025.3.0
