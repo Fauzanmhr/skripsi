@@ -1,0 +1,40 @@
+# Ignore virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Ignore IDE configuration files
+.idea/
+.vscode/
+
+# Ignore OS-specific files
+.DS_Store
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore environment-specific files
+.env
+example.env
+
+# Ignore logs and temporary files
+__pycache__/
+*.log
+*.tmp
+
+# Ignore test files and directories
+tests/
+*.test.py
+
+# Ignore documentation files
+docs/
+README.md
+
+# Ignore build artifacts
+dist/
+build/
+*.egg-info/
+Procfile
+vercel.json
