@@ -7,5 +7,4 @@ model.safetensors
 special_tokens_map.json
 tokenizer_config.json
 vocab.txt
-sentiment_model
 sentiment_model.zip
