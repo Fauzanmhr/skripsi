@@ -1,6 +1,16 @@
 # Use the official Node.js image with Alpine Linux
-FROM node:20-alpine
+FROM node:22-alpine
 LABEL authors="fauzanmhr"
+
+RUN apk --no-cache add \
+    curl \
+    tzdata \
+    rm -rf /var/cache/apk/*
+
+# Set the timezone to Asia/Jakarta
+RUN cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
+    echo "Asia/Jakarta" > /etc/timezone
+
 # Set the working directory inside the container
 WORKDIR /usr/src/app
 
@@ -15,9 +25,6 @@ COPY . .
 
 # Expose the port the app runs on
 EXPOSE 3000
-
-# Define environment variable
-ENV NODE_ENV=production
 
 # Command to run the application
 CMD ["node", "app.js"]
