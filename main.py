@@ -53,7 +53,7 @@ normalize_dict_path = "./normal.csv"
 normalize_dict = pd.read_csv(normalize_dict_path)
 normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
 
-# Cache translasi untuk menghindari permintaan berulang
+# Cache translate untuk menghindari permintaan berulang
 translation_cache = {}
 
 async def translate(text: str) -> str:
@@ -67,7 +67,7 @@ async def translate(text: str) -> str:
         translation_cache[text] = text
         return text
     
-    # Mencoba translasi dengan mekanisme retry
+    # Mencoba translate dengan mekanisme retry
     for attempt in range(MAX_RETRIES):
         try:
             translator = DeeplTranslator(
@@ -86,9 +86,8 @@ async def translate(text: str) -> str:
             print(f"Percobaan {attempt+1} gagal (Menunggu {wait_time}s): {str(e)[:100]}...")
             await asyncio.sleep(wait_time)
     
-    # Kembalikan teks asli jika semua percobaan gagal
-    translation_cache[text] = text
-    return text
+        # Gagal total setelah retry
+        raise ValueError(f"Translation failed after {MAX_RETRIES} attempts.")
 
 # Pipeline preprocessing teks
 async def preprocess_text(text):
@@ -122,7 +121,11 @@ async def root():
 # Endpoint untuk prediksi sentimen
 @app.post("/predict")
 async def predict_sentiment(input_text: TextInput):
-    processed_text = await preprocess_text(input_text.text)
+    try:
+        processed_text = await preprocess_text(input_text.text)
+    except ValueError as e:
+        return {"error": str(e)}
+
     inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=256)
     inputs = {key: value.to(device) for key, value in inputs.items()}
 
