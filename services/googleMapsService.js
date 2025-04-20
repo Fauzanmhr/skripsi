@@ -1,11 +1,14 @@
 import { scraper } from "google-maps-review-scraper";
 import Review from '../models/review.js';
 
+// Define Google Maps URL from environment variable
+const googleMapsURL = process.env.GOOGLE_MAPS_URL;
+
 // Clean review text by removing extra spaces and trimming
 const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
 
 // Fetch reviews from Google Maps
-export async function fetchReviews(googleMapsURL) {
+export async function fetchReviews() {
   try {
     // Fetch reviews from Google Maps
     const reviews = await scraper(googleMapsURL, {
@@ -71,9 +74,9 @@ export async function saveReviewsToDatabase(reviews) {
 }
 
 // Main function to crawl and save reviews
-export async function crawlAndSaveReviews(googleMapsURL) {
+export async function crawlAndSaveReviews() {
   try {
-    const reviews = await fetchReviews(googleMapsURL);
+    const reviews = await fetchReviews();
     return await saveReviewsToDatabase(reviews);
   } catch (error) {
     console.error("Error in crawl and save process:", error);

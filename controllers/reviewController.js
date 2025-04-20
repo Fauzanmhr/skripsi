@@ -125,8 +125,7 @@ export async function renderReviewsPage(req, res) {
 // Controller to handle Google Maps crawling request
 export async function handleCrawlRequest(req, res) {
   try {
-    const googleMapsURL = process.env.GOOGLE_MAPS_URL;
-    const result = await crawlAndSaveReviews(googleMapsURL);
+    const result = await crawlAndSaveReviews();
     res.json({
       success: true,
       message: `Crawling selesai. Tersimpan: ${result.saved}, Diperbarui: ${result.updated}, Error: ${result.errors}`,
