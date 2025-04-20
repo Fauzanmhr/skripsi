@@ -15,10 +15,6 @@ const Review = sequelize.define('review', {
     type: DataTypes.DATE,
     allowNull: false
   },
-  source: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
   sentiment: {
     type: DataTypes.ENUM('positif', 'negatif', 'netral', 'puas', 'kecewa'),
     allowNull: true

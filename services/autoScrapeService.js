@@ -112,12 +112,13 @@ function scheduleAutoScrape() {
     try {
       console.log(`Running auto scrape at ${new Date().toLocaleString()}`);
       
-      const result = await crawlAndSaveReviews();
+      const googleMapsURL = process.env.GOOGLE_MAPS_URL;
+      const result = await crawlAndSaveReviews(googleMapsURL);
       console.log(`Auto scrape completed. Saved: ${result.saved}, Updated: ${result.updated}`);
 
       // Update last scrape time and next scrape time
-      const currentTime = new Date();
-      settings.lastScrape = currentTime;
+      const now = new Date();
+      settings.lastScrape = now;
       settings.nextScrape = getNextMidnight();
 
       // Save updated times to the database
@@ -126,7 +127,7 @@ function scheduleAutoScrape() {
         defaults: settings
       });
       await record.update({
-        lastScrape: currentTime,
+        lastScrape: now,
         nextScrape: settings.nextScrape
       });
 

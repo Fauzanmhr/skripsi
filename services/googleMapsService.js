@@ -32,8 +32,7 @@ export async function fetchReviews() {
       .map(review => ({
         id: review.review_id,
         review: cleanText(review.review.text),
-        time_published: new Date(review.time.published / 1000),
-        source: "Google Maps Reviews"
+        time_published: new Date(review.time.published / 1000)
       })) || [];
   } catch (error) {
     console.error("Error fetching reviews:", error);
@@ -53,7 +52,6 @@ export async function saveReviewsToDatabase(reviews) {
         await existingReview.update({
           review: reviewData.review,
           time_published: reviewData.time_published,
-          source: reviewData.source,
           sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment
         });
         result.updated++;

@@ -12,8 +12,7 @@ export async function generateReviewsExcel(reviews) {
   worksheet.columns = [
     { header: 'Tanggal', key: 'date', width: 15 },
     { header: 'Ulasan', key: 'review', width: 50 },
-    { header: 'Sentimen', key: 'sentiment', width: 15 },
-    { header: 'Sumber', key: 'source', width: 15 }
+    { header: 'Sentimen', key: 'sentiment', width: 15 }
   ];
   
   // Add rows
@@ -21,8 +20,7 @@ export async function generateReviewsExcel(reviews) {
     worksheet.addRow({
       date: format(new Date(review.time_published), 'yyyy-MM-dd'),
       review: review.review,
-      sentiment: review.sentiment || 'Tertunda',
-      source: review.source
+      sentiment: review.sentiment || 'Tertunda'
     });
   });
   
