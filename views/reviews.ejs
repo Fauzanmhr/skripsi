@@ -102,7 +102,7 @@
                 <% filterOptions.sentiments.forEach(sentiment => { %>
                   <option value="<%= sentiment %>" <%= filters.sentiment === sentiment ? 'selected' : '' %>><%= sentiment %></option>
                 <% }); %>
-                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Tertunda</option>
+                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Sedang Diproses</option>
               </select>
             </div>
           </div>
@@ -154,7 +154,7 @@
                     <td class="text-start text-wrap"><%= review.review %></td>
                     <td>
                       <% if (!review.sentiment) { %>
-                        <span class="badge rounded-pill bg-warning text-dark">Tertunda</span>
+                        <span class="badge rounded-pill bg-warning text-dark">Sedang Diproses</span>
                       <% } else { %>
                         <span class="badge rounded-pill" id="badge-<%= review.id %>"><%= review.sentiment %></span>
                       <% } %>
@@ -196,7 +196,7 @@
           dari <%= pagination.totalCount %> ulasan
           <% if (filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending') || filters.startDate || filters.endDate) { %>
             (Difilter:
-            <% if (filters.sentiment === 'pending') { %>Tertunda<% } else if (filters.sentiment) { %>Sentimen: <%= filters.sentiment %><% } %>
+            <% if (filters.sentiment === 'pending') { %>Sedang Diproses<% } else if (filters.sentiment) { %>Sentimen: <%= filters.sentiment %><% } %>
             <% if ((filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending')) && (filters.startDate || filters.endDate)) { %>, <% } %>
             <% if (filters.startDate || filters.endDate) { %>Tanggal: <%= filters.startDate ? new Date(filters.startDate).toLocaleDateString('id-ID') : 'Kapan saja' %> hingga <%= filters.endDate ? new Date(filters.endDate).toLocaleDateString('id-ID') : 'Terbaru' %><% } %>)
           <% } %>

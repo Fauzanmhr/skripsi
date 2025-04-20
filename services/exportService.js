@@ -20,7 +20,7 @@ export async function generateReviewsExcel(reviews) {
     worksheet.addRow({
       date: format(new Date(review.time_published), 'yyyy-MM-dd'),
       review: review.review,
-      sentiment: review.sentiment || 'Tertunda'
+      sentiment: review.sentiment || 'Sedang Diproses'
     });
   });
   
