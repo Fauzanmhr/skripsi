@@ -8,7 +8,7 @@
       <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
-            <h6 class="card-subtitle mb-2 text-muted">Total Reviews</h6>
+            <h6 class="card-subtitle mb-2 text-muted">Total Ulasan</h6>
             <h3 class="card-title" id="totalReviews">0</h3>
             <div class="progress mt-2" style="height: 4px;">
               <div class="progress-bar bg-secondary" style="width: 100%"></div>
@@ -39,7 +39,7 @@
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0">All Time Sentiment Distribution</h5>
+            <h5 class="card-title mb-0">Distribusi Sentimen</h5>
           </div>
           <div class="card-body text-center">
             <div class="chart-container" style="position: relative; width: 100%; height: 300px;">
@@ -55,7 +55,7 @@
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-            <h5 class="card-title mb-0">Period Sentiment Distribution</h5>
+            <h5 class="card-title mb-0">Distribusi Sentimen Periode</h5>
             <div class="filter-controls d-flex gap-2">
               <form id="filterForm" class="d-flex gap-2" method="get">
                 <select name="month" id="monthFilter" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -99,8 +99,8 @@
         'kecewa': 'rgba(230, 81, 0, 0.8)'
       },
       monthNames: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
       ]
     },
     
@@ -153,7 +153,7 @@
     },
     
     createAllTimeChart: function(labels, data) {
-      this.createSentimentChart(labels, data, 'sentimentChart', 'All Time', 'bar');
+      this.createSentimentChart(labels, data, 'sentimentChart', 'Sepanjang Waktu', 'bar');
     },
     
     createFilteredChart: function(labels, data) {
@@ -181,7 +181,7 @@
       
       const datasets = chartType === 'pie' ? 
         [{
-          label: 'Number of Reviews',
+          label: 'Jumlah Ulasan',
           data: data,
           backgroundColor: backgroundColors,
           borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
@@ -203,7 +203,7 @@
         data: {
           labels: chartType === 'pie' ? 
             labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)) : 
-            ['Sentiment Distribution'],
+            [''], // Use an empty string for the bar chart label
           datasets: datasets
         },
         options: {
@@ -230,8 +230,8 @@
           },
           plugins: {
             title: {
-              display: true,
-              text: `${periodLabel} Sentiment Analysis`,
+              display: chartId !== 'sentimentChart',
+              text: `Analisis Sentimen ${periodLabel}`,
               font: {
                 size: 16,
                 weight: 'bold'
@@ -259,7 +259,7 @@
                   }
                   
                   const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
-                  return `${context.raw} reviews (${percentage}%)`;
+                  return `${context.raw} ulasan (${percentage}%)`;
                 },
                 title: function(context) {
                   return context[0].label;

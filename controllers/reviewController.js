@@ -94,7 +94,7 @@ export async function renderReviewsPage(req, res) {
     
     // Render the reviews page
     res.render('reviews', {
-      title: 'Review Data',
+      title: 'Data Ulasan',
       reviews,
       pagination: {
         page,
@@ -116,7 +116,7 @@ export async function renderReviewsPage(req, res) {
   } catch (error) {
     console.error('Reviews page rendering error:', error);
     res.status(500).render('error', {
-      message: 'Failed to load reviews',
+      message: 'Gagal memuat ulasan',
       error: process.env.NODE_ENV === 'development' ? error : {}
     });
   }
@@ -129,14 +129,14 @@ export async function handleCrawlRequest(req, res) {
     const result = await crawlAndSaveReviews(googleMapsURL);
     res.json({
       success: true,
-      message: `Crawling completed. Saved: ${result.saved}, Updated: ${result.updated}, Errors: ${result.errors}`,
+      message: `Crawling selesai. Tersimpan: ${result.saved}, Diperbarui: ${result.updated}, Error: ${result.errors}`,
       result
     });
   } catch (error) {
     console.error('Crawling error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to crawl reviews',
+      message: 'Gagal melakukan crawling ulasan',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }
@@ -187,7 +187,7 @@ export async function exportReviewsToExcel(req, res) {
     );
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename=reviews_export.xlsx'
+      'attachment; filename=ulasan_export.xlsx'
     );
     
     // Write workbook to response
@@ -198,7 +198,7 @@ export async function exportReviewsToExcel(req, res) {
     console.error('Export error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to export reviews',
+      message: 'Gagal mengekspor ulasan',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }
@@ -213,7 +213,7 @@ export async function getAutoScrapeSettings(req, res) {
     console.error('Error getting auto scrape settings:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get auto scrape settings',
+      message: 'Gagal mendapatkan pengaturan scrape otomatis',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }
@@ -228,7 +228,7 @@ export async function updateAutoScrapeSettings(req, res) {
     if (typeof enabled !== 'boolean') {
       return res.status(400).json({ 
         success: false, 
-        message: 'Enabled status must be a boolean' 
+        message: 'Status aktif harus berupa boolean'
       });
     }
     
@@ -237,14 +237,14 @@ export async function updateAutoScrapeSettings(req, res) {
     
     res.json({
       success: true,
-      message: `Auto scrape ${enabled ? 'enabled' : 'disabled'}`,
+      message: `Scrape otomatis ${enabled ? 'diaktifkan' : 'dinonaktifkan'}`,
       settings: updatedSettings
     });
   } catch (error) {
     console.error('Error updating auto scrape settings:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update auto scrape settings',
+      message: 'Gagal memperbarui pengaturan scrape otomatis',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
     });
   }

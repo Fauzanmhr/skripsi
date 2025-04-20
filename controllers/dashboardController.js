@@ -58,17 +58,17 @@ export async function renderDashboard(req, res) {
     const currentYear = currentDate.getFullYear();
     const years = Array.from({length: 5}, (_, i) => currentYear - i);
     const months = [
-      {value: 1, name: 'January'}, {value: 2, name: 'February'},
-      {value: 3, name: 'March'}, {value: 4, name: 'April'},
-      {value: 5, name: 'May'}, {value: 6, name: 'June'},
-      {value: 7, name: 'July'}, {value: 8, name: 'August'},
-      {value: 9, name: 'September'}, {value: 10, name: 'October'},
-      {value: 11, name: 'November'}, {value: 12, name: 'December'}
+      {value: 1, name: 'Januari'}, {value: 2, name: 'Februari'},
+      {value: 3, name: 'Maret'}, {value: 4, name: 'April'},
+      {value: 5, name: 'Mei'}, {value: 6, name: 'Juni'},
+      {value: 7, name: 'Juli'}, {value: 8, name: 'Agustus'},
+      {value: 9, name: 'September'}, {value: 10, name: 'Oktober'},
+      {value: 11, name: 'November'}, {value: 12, name: 'Desember'}
     ];
     
     // Render the dashboard
     res.render('dashboard', {
-      title: 'Sentiment Analysis Dashboard',
+      title: 'Dasbor Analisis Sentimen',
       stats: { 
         labels: sentimentLabels, 
         counts, 
@@ -85,7 +85,7 @@ export async function renderDashboard(req, res) {
   } catch (error) {
     console.error('Dashboard rendering error:', error);
     res.status(500).render('error', {
-      message: 'Failed to load dashboard',
+      message: 'Gagal memuat dasbor',
       error: process.env.NODE_ENV === 'development' ? error : {}
     });
   }

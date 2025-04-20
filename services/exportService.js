@@ -1,18 +1,19 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
+import { id } from 'date-fns/locale'; // Import Indonesian locale
 
 // Service function to generate Excel workbook
 export async function generateReviewsExcel(reviews) {
   // Create a new workbook
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Reviews');
+  const worksheet = workbook.addWorksheet('Ulasan');
   
   // Define columns
   worksheet.columns = [
-    { header: 'Date', key: 'date', width: 15 },
-    { header: 'Review', key: 'review', width: 50 },
-    { header: 'Sentiment', key: 'sentiment', width: 15 },
-    { header: 'Source', key: 'source', width: 15 }
+    { header: 'Tanggal', key: 'date', width: 15 },
+    { header: 'Ulasan', key: 'review', width: 50 },
+    { header: 'Sentimen', key: 'sentiment', width: 15 },
+    { header: 'Sumber', key: 'source', width: 15 }
   ];
   
   // Add rows
@@ -20,7 +21,7 @@ export async function generateReviewsExcel(reviews) {
     worksheet.addRow({
       date: format(new Date(review.time_published), 'yyyy-MM-dd'),
       review: review.review,
-      sentiment: review.sentiment || 'Pending',
+      sentiment: review.sentiment || 'Tertunda',
       source: review.source
     });
   });

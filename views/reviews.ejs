@@ -10,17 +10,17 @@
           <!-- Loading State -->
           <div id="loadingState">
             <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-              <span class="visually-hidden">Loading...</span>
+              <span class="visually-hidden">Memuat...</span>
             </div>
-            <h5 class="mt-3">Processing your request...</h5>
-            <p>Please wait while we scrape the data. This may take a few moments.</p>
+            <h5 class="mt-3">Memproses permintaan Anda...</h5>
+            <p>Harap tunggu selagi kami mengambil data. Ini mungkin memerlukan beberapa saat.</p>
           </div>
           
           <!-- Results State -->
           <div id="resultsState" class="d-none">
             <div class="alert alert-success" id="successAlert" role="alert"></div>
             <div class="alert alert-danger d-none" id="errorAlert" role="alert"></div>
-            <button class="btn btn-primary mt-3" id="closeModalButton" data-bs-dismiss="modal">Close</button>
+            <button class="btn btn-primary mt-3" id="closeModalButton" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
       </div>
@@ -32,40 +32,40 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Auto Scrape Settings</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Pengaturan Scrape Otomatis</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body">
           <form id="autoScrapeForm" class="row g-3">
             <div class="col-12">
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" id="autoScrapeEnabled" name="enabled">
-                <label class="form-check-label" for="autoScrapeEnabled">Enable Auto Scrape</label>
+                <label class="form-check-label" for="autoScrapeEnabled">Aktifkan Scrape Otomatis</label>
               </div>
             </div>
 
             <div class="col-12">
               <div class="alert alert-info">
                 <i class="bi bi-info-circle me-2"></i>
-                When enabled, reviews will automatically be scraped every day at midnight.
+                Jika diaktifkan, ulasan akan otomatis diambil setiap hari tengah malam.
               </div>
             </div>
             
             <div class="col-12">
-              <label for="lastScrape" class="form-label">Last Automatic Scrape</label>
+              <label for="lastScrape" class="form-label">Scrape Otomatis Terakhir</label>
               <input type="text" class="form-control" id="lastScrape" readonly disabled>
             </div>
             <div class="col-12">
-              <label for="nextScrape" class="form-label">Next Scheduled Scrape</label>
+              <label for="nextScrape" class="form-label">Scrape Terjadwal Berikutnya</label>
               <input type="text" class="form-control" id="nextScrape" readonly disabled>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
           <button type="button" id="saveAutoScrape" class="btn btn-primary">
             <span class="spinner-border spinner-border-sm d-none" id="autoScrapeSpinner"></span>
-            Save Settings
+            Simpan Pengaturan
           </button>
         </div>
       </div>
@@ -78,44 +78,44 @@
       <div class="d-flex gap-2">
         <button id="autoScrapeButton" class="btn btn-outline-primary d-flex align-items-center">
           <i class="bi bi-clock-history me-2"></i>
-          <span id="autoScrapeStatus">Auto Scrape</span>
+          <span id="autoScrapeStatus">Scrape Otomatis</span>
         </button>
         <button id="crawlButton" class="btn btn-primary d-flex align-items-center">
           <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="crawlSpinner"></span>
-          Scrape Google Maps Reviews
+          Scrape Ulasan Google Maps
         </button>
       </div>
     </div>
     
     <div class="card shadow-sm mb-5">
       <div class="card-header py-3">
-        <h5 class="mb-0">Review List</h5>
+        <h5 class="mb-0">Daftar Ulasan</h5>
       </div>
       <div class="card-header bg-light py-3">
         <form id="filterForm" class="row g-2 align-items-center justify-content-center" method="GET">
           <input type="hidden" name="page" value="1">
           <div class="col-12 col-sm-auto">
             <div class="input-group input-group-sm">
-              <span class="input-group-text">Sentiment</span>
-              <select name="sentiment" class="form-select" aria-label="Filter by sentiment">
-                <option value="">All Sentiments</option>
+              <span class="input-group-text">Sentimen</span>
+              <select name="sentiment" class="form-select" aria-label="Filter berdasarkan sentimen">
+                <option value="">Semua Sentimen</option>
                 <% filterOptions.sentiments.forEach(sentiment => { %>
                   <option value="<%= sentiment %>" <%= filters.sentiment === sentiment ? 'selected' : '' %>><%= sentiment %></option>
                 <% }); %>
-                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Pending</option>
+                <option value="pending" <%= filters.sentiment === 'pending' ? 'selected' : '' %>>Tertunda</option>
               </select>
             </div>
           </div>
           <div class="col-12 col-sm-auto">
             <div class="input-group input-group-sm">
-              <span class="input-group-text">From</span>
-              <input type="date" name="startDate" class="form-control" value="<%= filters.startDate || '' %>" aria-label="Start date">
+              <span class="input-group-text">Dari</span>
+              <input type="date" name="startDate" class="form-control" value="<%= filters.startDate || '' %>" aria-label="Tanggal mulai">
             </div>
           </div>
           <div class="col-12 col-sm-auto">
             <div class="input-group input-group-sm">
-              <span class="input-group-text">To</span>
-              <input type="date" name="endDate" class="form-control" value="<%= filters.endDate || '' %>" aria-label="End date">
+              <span class="input-group-text">Hingga</span>
+              <input type="date" name="endDate" class="form-control" value="<%= filters.endDate || '' %>" aria-label="Tanggal akhir">
             </div>
           </div>
           <% if (filters.sentiment || filters.startDate || filters.endDate) { %>
@@ -127,7 +127,7 @@
             <button id="exportButton" class="btn btn-sm btn-success d-flex align-items-center">
               <i class="bi bi-file-earmark-excel me-2"></i>
               <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="exportSpinner"></span>
-              Export
+              Ekspor
             </button>
           </div>
         </form>
@@ -137,25 +137,25 @@
           <table class="table table-hover text-center table-striped">
             <thead class="table-light sticky-top">
               <tr>
-                <th>Date</th>
-                <th class="text-start w-50">Review</th>
-                <th>Sentiment</th>
-                <th>Source</th>
+                <th>Tanggal</th>
+                <th class="text-start w-50">Ulasan</th>
+                <th>Sentimen</th>
+                <th>Sumber</th>
               </tr>
             </thead>
             <tbody>
               <% if (reviews.length === 0) { %>
                 <tr>
-                  <td colspan="4" class="text-center text-muted">No reviews found</td>
+                  <td colspan="4" class="text-center text-muted">Tidak ada ulasan ditemukan</td>
                 </tr>
               <% } else { %>
                 <% reviews.forEach(review => { %>
                   <tr>
-                    <td><%= new Date(review.time_published).toLocaleDateString() %></td>
+                    <td><%= new Date(review.time_published).toLocaleDateString('id-ID') %></td>
                     <td class="text-start text-wrap"><%= review.review %></td>
                     <td>
                       <% if (!review.sentiment) { %>
-                        <span class="badge rounded-pill bg-warning text-dark">Pending</span>
+                        <span class="badge rounded-pill bg-warning text-dark">Tertunda</span>
                       <% } else { %>
                         <span class="badge rounded-pill" id="badge-<%= review.id %>"><%= review.sentiment %></span>
                       <% } %>
@@ -195,14 +195,14 @@
         <% } %>
         
         <p class="text-center mt-3 text-muted">
-          Showing <%= (pagination.page - 1) * pagination.limit + 1 %> - 
+          Menampilkan <%= (pagination.page - 1) * pagination.limit + 1 %> - 
           <%= Math.min(pagination.page * pagination.limit, pagination.totalCount) %> 
-          of <%= pagination.totalCount %> reviews
+          dari <%= pagination.totalCount %> ulasan
           <% if (filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending') || filters.startDate || filters.endDate) { %>
-            (Filtered: 
-            <% if (filters.sentiment === 'pending') { %>Pending<% } else if (filters.sentiment) { %>Sentiment: <%= filters.sentiment %><% } %>
+            (Difilter:
+            <% if (filters.sentiment === 'pending') { %>Tertunda<% } else if (filters.sentiment) { %>Sentimen: <%= filters.sentiment %><% } %>
             <% if ((filters.sentiment === 'pending' || (filters.sentiment && filters.sentiment !== 'pending')) && (filters.startDate || filters.endDate)) { %>, <% } %>
-            <% if (filters.startDate || filters.endDate) { %>Date: <%= filters.startDate ? new Date(filters.startDate).toLocaleDateString() : 'Any' %> to <%= filters.endDate ? new Date(filters.endDate).toLocaleDateString() : 'Any' %><% } %>)
+            <% if (filters.startDate || filters.endDate) { %>Tanggal: <%= filters.startDate ? new Date(filters.startDate).toLocaleDateString('id-ID') : 'Kapan saja' %> hingga <%= filters.endDate ? new Date(filters.endDate).toLocaleDateString('id-ID') : 'Terbaru' %><% } %>)
           <% } %>
         </p>
       </div>
@@ -293,7 +293,7 @@
         
       } catch (error) {
         console.error('Export failed:', error);
-        alert('Export failed. Please try again.');
+        alert('Ekspor gagal. Silakan coba lagi.');
       } finally {
         setTimeout(() => {
           button.disabled = false;
@@ -357,14 +357,14 @@
         successAlert.textContent = result.message;
         successAlert.classList.remove('d-none');
       } else {
-        errorAlert.textContent = result.message || 'An unknown error occurred';
+        errorAlert.textContent = result.message || 'Terjadi kesalahan yang tidak diketahui';
         errorAlert.classList.remove('d-none');
       }
     } catch (error) {
       console.error('Operation failed:', error);
       loadingState.classList.add('d-none');
       resultsState.classList.remove('d-none');
-      errorAlert.textContent = 'Failed to perform operation. Please try again.';
+      errorAlert.textContent = 'Gagal melakukan operasi. Silakan coba lagi.';
       errorAlert.classList.remove('d-none');
     } finally {
       button.disabled = false;
@@ -384,15 +384,15 @@
         
         // Show last and next scrape times
         if (settings.lastScrape) {
-          document.getElementById('lastScrape').value = new Date(settings.lastScrape).toLocaleString();
+          document.getElementById('lastScrape').value = new Date(settings.lastScrape).toLocaleString('id-ID');
         } else {
-          document.getElementById('lastScrape').value = 'Never';
+          document.getElementById('lastScrape').value = 'Tidak Pernah';
         }
         
         if (settings.nextScrape && settings.enabled) {
-          document.getElementById('nextScrape').value = new Date(settings.nextScrape).toLocaleString();
+          document.getElementById('nextScrape').value = new Date(settings.nextScrape).toLocaleString('id-ID');
         } else {
-          document.getElementById('nextScrape').value = 'Not scheduled';
+          document.getElementById('nextScrape').value = 'Tidak terjadwal';
         }
         
         // Update status button
@@ -434,12 +434,12 @@
           updateAutoScrapeStatusButton(formData.enabled);
           modal.hide();
         } else {
-          alert(result.message || 'Failed to save settings');
+          alert(result.message || 'Gagal menyimpan pengaturan');
         }
         
       } catch (error) {
         console.error('Failed to save auto scrape settings:', error);
-        alert('An error occurred while saving settings');
+        alert('Terjadi kesalahan saat menyimpan pengaturan');
       } finally {
         button.disabled = false;
         spinner.classList.add('d-none');
@@ -467,11 +467,11 @@
     if (enabled) {
       button.classList.remove('btn-outline-primary');
       button.classList.add('btn-outline-success');
-      status.textContent = 'Auto Scrape: ON';
+      status.textContent = 'Scrape Otomatis: AKTIF';
     } else {
       button.classList.remove('btn-outline-success');
       button.classList.add('btn-outline-primary');
-      status.textContent = 'Auto Scrape: OFF';
+      status.textContent = 'Scrape Otomatis: NONAKTIF';
     }
   }
 </script>

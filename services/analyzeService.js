@@ -63,7 +63,7 @@ export async function generateCSV(rows) {
 
 export async function generateExcel(rows) {
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Analyzed Reviews');
+  const worksheet = workbook.addWorksheet('Ulasan Teranalisis');
   
   // Add headers
   const headers = Object.keys(rows[0]);
@@ -102,13 +102,13 @@ export async function processFileContent(rows, column) {
       const sentiment = await analyzeSentiment(reviewText);
       processedRows.push({
         ...row,
-        sentiment: sentiment
+        sentimen: sentiment
       });
     } catch (error) {
-      console.error(`Error analyzing row: ${error.message}`);
+      console.error(`Kesalahan menganalisis baris: ${error.message}`);
       processedRows.push({
         ...row,
-        sentiment: 'ERROR'
+        sentimen: 'GAGAL'
       });
     }
   }

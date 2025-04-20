@@ -12,7 +12,7 @@ const uploadedFiles = new Map();
 // Render the file upload page
 export function renderFileUploadPage(req, res) {
   res.render('analyzer', {
-    title: 'Analyze Reviews from File',
+    title: 'Analisis Ulasan dari File',
     page: 'analyzer'
   });
 }
@@ -21,7 +21,7 @@ export function renderFileUploadPage(req, res) {
 export async function handleFileUpload(req, res) {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'Tidak ada file yang diunggah' });
     }
 
     const fileBuffer = req.file.buffer;
@@ -33,11 +33,11 @@ export async function handleFileUpload(req, res) {
     } else if (fileType.includes('spreadsheet') || req.file.originalname.endsWith('.xlsx')) {
       rows = await parseExcel(fileBuffer);
     } else {
-      return res.status(400).json({ error: 'Unsupported file type' });
+      return res.status(400).json({ error: 'Jenis file tidak didukung' });
     }
 
     if (rows.length === 0) {
-      return res.status(400).json({ error: 'No data found in file' });
+      return res.status(400).json({ error: 'Tidak ada data ditemukan dalam file' });
     }
 
     const columns = Object.keys(rows[0]);
@@ -62,9 +62,9 @@ export async function handleFileUpload(req, res) {
     });
 
   } catch (error) {
-    console.error('File upload error:', error);
+    console.error('Kesalahan unggah file:', error);
     res.status(500).json({ 
-      error: 'Failed to process file',
+      error: 'Gagal memproses file',
       details: process.env.NODE_ENV === 'development' ? error.message : null
     });
   }
@@ -76,13 +76,13 @@ export async function processFileAnalysis(req, res) {
     const { fileId, column } = req.body;
 
     if (!column || !fileId) {
-      return res.status(400).json({ error: 'Missing required parameters' });
+      return res.status(400).json({ error: 'Parameter yang diperlukan tidak ada' });
     }
     
     // Get the stored file data using the file ID
     const fileData = uploadedFiles.get(fileId);
     if (!fileData) {
-      return res.status(404).json({ error: 'File not found or expired. Please upload again.' });
+      return res.status(404).json({ error: 'File tidak ditemukan atau kedaluwarsa. Silakan unggah lagi.' }); 
     }
     
     const { rows, originalFilename } = fileData;
@@ -101,15 +101,15 @@ export async function processFileAnalysis(req, res) {
 
     res.json({
       success: true,
-      filename: `analyzed_${originalFilename}`,
+      filename: `teranalisis_${originalFilename}`,
       file: outputFile.toString('base64'),
       total: processedRows.length
     });
 
   } catch (error) {
-    console.error('Analysis error:', error);
+    console.error('Kesalahan analisis:', error);
     res.status(500).json({ 
-      error: 'Failed to analyze file',
+      error: 'Gagal menganalisis file',
       details: process.env.NODE_ENV === 'development' ? error.message : null
     });
   }
