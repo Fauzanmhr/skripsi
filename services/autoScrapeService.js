@@ -31,6 +31,12 @@ export async function loadSettings() {
       nextScrape: record.nextScrape
     };
     
+    // If nextScrape is in the past, reset it
+    const now = new Date();
+    if (settings.nextScrape && new Date(settings.nextScrape) < now) {
+      settings.nextScrape = calculateNextScrapeTime();
+    }
+
     // Re-schedule job if enabled
     if (settings.enabled) {
       scheduleAutoScrape();
@@ -102,7 +108,7 @@ function calculateNextScrapeTime() {
   const now = new Date();
   const nextDate = new Date(now);
   
-  // Set to next midnight
+  // If the current time is past midnight, set it to the next day's midnight
   nextDate.setHours(24, 0, 0, 0); // Set to next day at midnight
   
   console.log(`Next scrape scheduled for (system time): ${nextDate.toLocaleString()}`);
