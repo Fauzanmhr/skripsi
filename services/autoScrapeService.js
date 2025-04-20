@@ -9,39 +9,45 @@ const DEFAULT_SETTINGS = {
   nextScrape: null
 };
 
-// Daily job configuration (midnight)
+// Cron job expression (daily at midnight)
 const CRON_EXPRESSION = '0 0 * * *'; 
 
 let currentJob = null;
 let settings = { ...DEFAULT_SETTINGS };
 
-// Load settings from database
+// Helper function to get the current time at midnight
+const getNextMidnight = () => {
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0); // Set to next midnight
+  return nextMidnight;
+};
+
+// Load settings from the database
 export async function loadSettings() {
   try {
-    // Get the settings record (create if it doesn't exist)
     const [record] = await AutoScrapeSetting.findOrCreate({
       where: { id: 1 },
       defaults: DEFAULT_SETTINGS
     });
-    
-    // Update the in-memory settings
-    settings = {
+
+    // Update in-memory settings
+    settings = { 
       enabled: record.enabled,
       lastScrape: record.lastScrape,
-      nextScrape: record.nextScrape
+      nextScrape: record.nextScrape || getNextMidnight() // Fallback if nextScrape is null
     };
-    
-    // If nextScrape is in the past, reset it
-    const now = new Date();
-    if (settings.nextScrape && new Date(settings.nextScrape) < now) {
-      settings.nextScrape = calculateNextScrapeTime();
+
+    // Adjust nextScrape if it’s in the past
+    if (settings.nextScrape < new Date()) {
+      settings.nextScrape = getNextMidnight();
     }
 
-    // Re-schedule job if enabled
+    // Reschedule the job if enabled
     if (settings.enabled) {
       scheduleAutoScrape();
     }
-    
+
     return settings;
   } catch (error) {
     console.error('Failed to load auto scrape settings:', error);
@@ -49,39 +55,33 @@ export async function loadSettings() {
   }
 }
 
-// Save settings to database
+// Save settings to the database
 export async function saveSettings(newSettings) {
   try {
-    // Update settings in memory
-    settings = {
-      ...settings,
-      ...newSettings
-    };
-    
-    // Handle job scheduling/cancellation
+    settings = { ...settings, ...newSettings };
+
+    // Recalculate next scrape if enabled
     if (settings.enabled) {
-      // Calculate next scrape time
-      settings.nextScrape = calculateNextScrapeTime();
+      settings.nextScrape = getNextMidnight();
     } else {
       cancelAutoScrape();
       settings.nextScrape = null;
     }
-    
-    // Save to database
+
+    // Save settings to the database
     const [record] = await AutoScrapeSetting.findOrCreate({
       where: { id: 1 },
       defaults: settings
     });
-    
-    // Update the record with new settings
+
     await record.update(settings);
-    console.log('Auto scrape settings saved to database:', settings);
-    
-    // Handle job scheduling/cancellation
+    console.log('Auto scrape settings saved:', settings);
+
+    // Reschedule the job if enabled
     if (settings.enabled) {
       scheduleAutoScrape();
     }
-    
+
     return settings;
   } catch (error) {
     console.error('Failed to save auto scrape settings:', error);
@@ -94,7 +94,7 @@ export function getSettings() {
   return { ...settings };
 }
 
-// Cancel current auto scrape job if any
+// Cancel the current auto scrape job
 function cancelAutoScrape() {
   if (currentJob) {
     currentJob.stop();
@@ -103,54 +103,43 @@ function cancelAutoScrape() {
   }
 }
 
-// Calculate the next scrape time
-function calculateNextScrapeTime() {
-  const now = new Date();
-  const nextDate = new Date(now);
-  
-  // If the current time is past midnight, set it to the next day's midnight
-  nextDate.setHours(24, 0, 0, 0); // Set to next day at midnight
-  
-  console.log(`Next scrape scheduled for (system time): ${nextDate.toLocaleString()}`);
-  return nextDate;
-}
-
-// Schedule auto scrape job
+// Schedule the auto scrape job
 function scheduleAutoScrape() {
-  // Cancel existing job if any
-  cancelAutoScrape();
-  
-  // Schedule new job (midnight system time)
+  cancelAutoScrape();  // Cancel any existing job
+
+  // Schedule new job for midnight every day
   currentJob = cron.schedule(CRON_EXPRESSION, async () => {
     try {
       console.log(`Running auto scrape at ${new Date().toLocaleString()}`);
+      
       const googleMapsURL = process.env.GOOGLE_MAPS_URL;
       const result = await crawlAndSaveReviews(googleMapsURL);
       console.log(`Auto scrape completed. Saved: ${result.saved}, Updated: ${result.updated}`);
-      
-      // Update last scrape time and calculate next scrape time
+
+      // Update last scrape time and next scrape time
       const now = new Date();
       settings.lastScrape = now;
-      settings.nextScrape = calculateNextScrapeTime();
-      
-      // Save updated times to database
+      settings.nextScrape = getNextMidnight();
+
+      // Save updated times to the database
       const [record] = await AutoScrapeSetting.findOrCreate({
         where: { id: 1 },
         defaults: settings
       });
-      await record.update({ 
+      await record.update({
         lastScrape: now,
         nextScrape: settings.nextScrape
       });
+
     } catch (error) {
       console.error('Auto scrape failed:', error);
     }
   });
-  
-  console.log(`Auto scrape scheduled to run daily at midnight. Next run: ${settings.nextScrape.toLocaleString()}`);
+
+  console.log(`Auto scrape scheduled at midnight. Next run: ${settings.nextScrape.toLocaleString()}`);
 }
 
-// Initialize service
+// Initialize the auto scrape service
 export function initAutoScrapeService() {
   loadSettings().catch(error => {
     console.error('Error initializing auto scrape service:', error);
