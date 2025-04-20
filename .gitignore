@@ -4,3 +4,4 @@ venv
 .venv
 backup
 sentiment_model.zip
+__pycache__
