@@ -127,11 +127,17 @@ function scheduleAutoScrape() {
     try {
       console.log(`Checking auto scrape conditions at ${new Date().toLocaleString()}`);
 
-      // Check if another scrape is already running
-      const runningScrape = await ScrapeStatus.findOne({ where: { status: 'running' } });
-      if (runningScrape) {
-        console.log(`Auto scrape skipped: Another scrape (${runningScrape.type}) is already running.`);
-        return;
+      // Check if another AUTO scrape is already running
+      const runningAutoScrape = await ScrapeStatus.findOne({
+        where: {
+          status: 'running',
+          type: 'auto' // Only check for other 'auto' scrapes
+        }
+      });
+      if (runningAutoScrape) {
+        // If an AUTO scrape is found with status 'running', log and exit.
+        console.log(`Auto scrape skipped: Another auto scrape is already running.`);
+        return; // This stops the auto-scrape execution for this scheduled time.
       }
 
       // Clean up old 'auto' logs before starting
