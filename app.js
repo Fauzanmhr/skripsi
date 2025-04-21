@@ -7,8 +7,9 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import analyzeRoutes from './routes/analyzeRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
-import { initAutoScrapeService } from './services/autoScrapeService.js';
+import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
 import { sequelize } from './config/database.js';
+import { broadcastStatusUpdate } from './controllers/reviewController.js';
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -65,13 +66,16 @@ async function startServer() {
     // Sync database models
     await sequelize.sync();
     console.log('Database synchronized successfully');
-    
+
+    // Reset any stale 'running' scrape statuses on startup using the function from autoScrapeService
+    await resetStaleScrapesOnStartup();
+
     // Start the sentiment analysis background job
     startSentimentAnalysisJob();
-    
-    // Initialize auto scrape service
-    initAutoScrapeService();
-    
+
+    // Initialize auto scrape service, passing the broadcast function
+    initAutoScrapeService(broadcastStatusUpdate);
+
     // Start the server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

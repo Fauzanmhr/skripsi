@@ -14,7 +14,7 @@ export async function fetchReviews() {
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
       search_query: "",
-      // pages: 1,
+      // pages: 10,
       clean: true
     });
     
@@ -42,20 +42,28 @@ export async function fetchReviews() {
 
 // Save reviews to database
 export async function saveReviewsToDatabase(reviews) {
-  const result = { saved: 0, updated: 0, errors: 0, total: reviews.length };
-  
+  const result = { saved: 0, updated: 0, skipped: 0, errors: 0, total: reviews.length };
+
   for (const reviewData of reviews) {
     try {
       const existingReview = await Review.findByPk(reviewData.id);
-      // Update existing review if found
+
       if (existingReview) {
-        await existingReview.update({
-          review: reviewData.review,
-          time_published: reviewData.time_published,
-          sentiment: existingReview.review !== reviewData.review ? null : existingReview.sentiment
-        });
-        result.updated++;
+        // Check if the review text has actually changed
+        if (existingReview.review !== reviewData.review) {
+          // Text changed, update the review and reset sentiment
+          await existingReview.update({
+            review: reviewData.review,
+            time_published: reviewData.time_published,
+            sentiment: null // Reset sentiment if review text changed
+          });
+          result.updated++;
+        } else {
+          // Text is the same, skip the update
+          result.skipped++;
+        }
       } else {
+        // New review, create it
         await Review.create({
           ...reviewData,
           sentiment: null
@@ -67,8 +75,8 @@ export async function saveReviewsToDatabase(reviews) {
       result.errors++;
     }
   }
-  
-  return result;
+
+  return result; // Return the result object including 'skipped'
 }
 
 // Main function to crawl and save reviews

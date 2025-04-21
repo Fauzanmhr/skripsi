@@ -2,31 +2,6 @@
 
 <div class="flex-wrapper">
 
-  <!-- Loading Modal -->
-  <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body text-center py-4">
-          <!-- Loading State -->
-          <div id="loadingState">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-              <span class="visually-hidden">Memuat...</span>
-            </div>
-            <h5 class="mt-3">Memproses permintaan Anda...</h5>
-            <p>Harap tunggu selagi kami mengambil data. Ini mungkin memerlukan beberapa saat.</p>
-          </div>
-          
-          <!-- Results State -->
-          <div id="resultsState" class="d-none">
-            <div class="alert alert-success" id="successAlert" role="alert"></div>
-            <div class="alert alert-danger d-none" id="errorAlert" role="alert"></div>
-            <button class="btn btn-primary mt-3" id="closeModalButton" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Auto Scrape Settings Modal -->
   <div class="modal fade" id="autoScrapeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -52,12 +27,16 @@
             </div>
             
             <div class="col-12">
-              <label for="lastScrape" class="form-label">Scrape Otomatis Terakhir</label>
-              <input type="text" class="form-control" id="lastScrape" readonly disabled>
-            </div>
-            <div class="col-12">
               <label for="nextScrape" class="form-label">Scrape Terjadwal Berikutnya</label>
               <input type="text" class="form-control" id="nextScrape" readonly disabled>
+            </div>
+
+            <!-- Last Auto Scrape Info Section -->
+            <div class="col-12 mt-3 border-top pt-3">
+              <h6 class="mb-2">Informasi Scrape Otomatis Terakhir</h6>
+              <div id="lastAutoScrapeInfo" class="small text-muted">
+                <span class="placeholder-glow"><span class="placeholder col-6"></span></span>
+              </div>
             </div>
           </form>
         </div>
@@ -73,20 +52,30 @@
   </div>
 
   <div class="container content">
-    <div class="mt-4 d-flex justify-content-between align-items-center mb-4">
-      <h2 class="fw-bold"></h2>
-      <div class="d-flex gap-2">
-        <button id="autoScrapeButton" class="btn btn-outline-primary d-flex align-items-center">
-          <i class="bi bi-clock-history me-2"></i>
-          <span id="autoScrapeStatus">Scrape Otomatis</span>
-        </button>
-        <button id="crawlButton" class="btn btn-primary d-flex align-items-center">
-          <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="crawlSpinner"></span>
-          Scrape Ulasan Google Maps
-        </button>
+    <div class="mt-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0"></h2>
+        <div class="d-flex gap-2">
+          <button id="autoScrapeButton" class="btn btn-outline-primary d-flex align-items-center">
+            <i class="bi bi-clock-history me-2"></i>
+            <span id="autoScrapeStatus">Scrape Otomatis</span>
+          </button>
+          <button id="crawlButton" class="btn btn-primary d-flex align-items-center"
+                  <%= manualScrapeStatus.status === 'running' ? 'disabled' : '' %>>
+            <span class="spinner-border spinner-border-sm me-2 <%= manualScrapeStatus.status === 'running' ? '' : 'd-none' %>" role="status" aria-hidden="true" id="crawlSpinner"></span>
+            <span id="crawlButtonText"><%= manualScrapeStatus.status === 'running' ? 'Sedang Scrape...' : 'Scrape Ulasan Google Maps' %></span>
+          </button>
+        </div>
       </div>
+
+      <!-- Last Scrape Info Row -->
+      <div id="lastScrapeInfoRow" class="d-flex flex-wrap justify-content-start align-items-center gap-3 small text-muted pt-2" style="min-height: 2.5em;"> <!-- Added min-height for stability -->
+        <% /* Initial rendering handled by JavaScript on DOMContentLoaded */ %>
+        <span class="placeholder-glow" style="width: 100%;"><span class="placeholder col-8"></span></span> <!-- Placeholder while JS loads -->
+      </div>
+
     </div>
-    
+
     <div class="card shadow-sm mb-5">
       <div class="card-header py-3">
         <h5 class="mb-0">Daftar Ulasan</h5>
@@ -132,8 +121,9 @@
           </div>
         </form>
       </div>
+
       <div class="card-body p-4">
-        <div class="table-responsive" style="height: 600px; overflow-y: auto;">
+        <div class="table-responsive" style="height: 450px; overflow-y: auto;"> <!-- Reduced height -->
           <table class="table table-hover text-center table-striped">
             <thead class="table-light sticky-top">
               <tr>
@@ -212,12 +202,15 @@
 <script>
   // Color mapping
   const badgeColors = {
-    'positif': '#2E7D32',  // Dark green
-    'negatif': '#B71C1C',  // Dark red
-    'netral': '#424242',   // Dark gray
-    'puas': '#0D47A1',     // Dark blue
-    'kecewa': '#E65100'    // Dark orange
+    'positif': '#2E7D32', 
+    'negatif': '#B71C1C',
+    'netral': '#424242',
+    'puas': '#0D47A1',
+    'kecewa': '#E65100'
   };
+
+  // Store initial status data passed from server
+  const initialLatestScrapeStatus = <%- JSON.stringify(latestScrapeStatus || null) %>;
 
   document.addEventListener('DOMContentLoaded', function() {
     // Apply colors to sentiment badges
@@ -238,13 +231,14 @@
     // Set up auto scrape button
     setupAutoScrape();
 
-    // Reload page when modal is closed
-    const loadingModal = document.getElementById('loadingModal');
-    if (loadingModal) {
-      loadingModal.addEventListener('hidden.bs.modal', function() {
-        location.reload();
-      });
-    }
+    // Initial render of the scrape status row
+    updateScrapeStatusRow(initialLatestScrapeStatus);
+    // update button state initially
+    updateCrawlButtonState(initialLatestScrapeStatus);
+
+    // --- Initialize SSE Connection ---
+    initializeSSE();
+    // ---
   });
   
   function applySentimentBadgeColors() {
@@ -267,7 +261,7 @@
   
   function setupCrawlButton() {
     document.getElementById('crawlButton').addEventListener('click', async function() {
-      await performCrawl(this, 'crawlSpinner', '/reviews/crawl');
+      await performCrawl(this, 'crawlSpinner', 'crawlButtonText', '/reviews/crawl');
     });
   }
   
@@ -318,90 +312,269 @@
     });
   }
   
-  async function performCrawl(button, spinnerId, endpoint) {
+  async function performCrawl(button, spinnerId, buttonTextId, endpoint) {
     const spinner = document.getElementById(spinnerId);
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    const loadingState = document.getElementById('loadingState');
-    const resultsState = document.getElementById('resultsState');
-    const successAlert = document.getElementById('successAlert');
-    const errorAlert = document.getElementById('errorAlert');
-    
+    const buttonText = document.getElementById(buttonTextId);
+    const originalButtonText = 'Scrape Ulasan Google Maps'; // Define original text
+
+    // UI update for 'running' state will be handled by SSE broadcast
+
     try {
-      // Disable button and show spinner
+      // Disable button and show spinner for immediate feedback
       button.disabled = true;
       spinner.classList.remove('d-none');
-      
-      // Show loading modal
-      loadingState.classList.remove('d-none');
-      resultsState.classList.add('d-none');
-      errorAlert.classList.add('d-none');
-      successAlert.classList.add('d-none');
-      loadingModal.show();
-      
-      const response = await fetch(endpoint, { 
-        method: 'POST', 
+      buttonText.textContent = 'Sedang Scrape...';
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       const result = await response.json();
-      
-      // Show results in modal
-      loadingState.classList.add('d-none');
-      resultsState.classList.remove('d-none');
-      
+
+      // Server broadcasted the final status (success/failure) via SSE.
+      // Client receives it via 'statusUpdate' listener in initializeSSE.
+
       if (response.ok) {
-        successAlert.textContent = result.message;
-        successAlert.classList.remove('d-none');
+        // SUCCESS: No manual UI update or reload needed here.
+        console.log("Crawl request successful, waiting for SSE update for final status.");
+        // If scrape completes very quickly, SSE might arrive before fetch returns.
+        // The button state will be corrected by the SSE handler.
       } else {
-        errorAlert.textContent = result.message || 'Terjadi kesalahan yang tidak diketahui';
-        errorAlert.classList.remove('d-none');
+        // REQUEST FAILED (e.g., 409 Conflict, 500 before broadcast):
+        // SSE might not have broadcasted failure. Update button state locally as fallback.
+        console.error("Scrape request failed:", result.message || 'Unknown error');
+        // Alert the user about the immediate failure (e.g., conflict)
+        alert(`Error: ${result.message || 'Terjadi kesalahan saat memulai scrape'}`);
+        // Re-enable button if the request itself failed (like 409 conflict)
+        // The SSE handler will manage the button state if the scrape *process* fails later.
+        if (response.status === 409) { // Specifically re-enable on conflict
+             updateCrawlButtonState({ status: 'idle' }); // Reset button as if idle
+        }
+        // For other errors (500), the SSE 'failed' message should handle the button state.
       }
     } catch (error) {
-      console.error('Operation failed:', error);
-      loadingState.classList.add('d-none');
-      resultsState.classList.remove('d-none');
-      errorAlert.textContent = 'Gagal melakukan operasi. Silakan coba lagi.';
-      errorAlert.classList.remove('d-none');
-    } finally {
-      button.disabled = false;
-      spinner.classList.add('d-none');
+      // NETWORK/FETCH ERROR: SSE won't be triggered. Update UI locally.
+      console.error('Crawl operation fetch failed:', error);
+      updateScrapeStatusRow({
+          type: 'manual',
+          status: 'failed',
+          startTime: new Date(), // Approximate start
+          endTime: new Date(),
+          message: `Fetch error: ${error.message}`
+      });
+      updateCrawlButtonState({ status: 'failed' }); // Update button on fetch error
+      alert('Gagal menghubungi server untuk memulai scrape. Periksa koneksi Anda.');
     }
   }
-  
+
+  // Function to update the scrape status row display
+  function updateScrapeStatusRow(statusData) {
+    const row = document.getElementById('lastScrapeInfoRow');
+    if (!row) return; // Exit if row element not found
+
+    if (!statusData) {
+      row.innerHTML = `
+        <span>
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Scrape Terakhir:</strong> Belum ada data.
+        </span>`;
+      return;
+    }
+
+    let content = `
+      <span>
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Scrape ${statusData.status === 'running' ? 'Sedang Berjalan' : 'Terakhir'}:</strong>
+      </span>`;
+
+    if (statusData.startTime) {
+      content += `
+        <span>
+          <i class="bi bi-calendar-play me-1"></i>
+          ${new Date(statusData.startTime).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+        </span>`;
+    }
+
+    content += `
+      <span>
+        <i class="bi bi-${statusData.type === 'auto' ? 'robot' : 'person'} me-1"></i>
+        ${statusData.type === 'auto' ? 'Otomatis' : 'Manual'}
+      </span>`;
+
+    let statusIcon = 'question-circle';
+    let statusText = 'Unknown';
+    let statusColorClass = 'text-muted';
+
+    switch (statusData.status) {
+      case 'running':
+        statusIcon = 'hourglass-split';
+        statusText = 'Sedang Berjalan...';
+        statusColorClass = 'text-primary';
+        break;
+      case 'completed':
+        statusIcon = 'check-circle-fill';
+        statusText = 'Selesai';
+        statusColorClass = 'text-success';
+        break;
+      case 'failed':
+        statusIcon = 'x-circle-fill';
+        statusText = 'Gagal';
+        statusColorClass = 'text-danger';
+        break;
+    }
+
+    content += `
+      <span class="${statusColorClass}">
+        <i class="bi bi-${statusIcon} me-1"></i>
+        ${statusText}
+      </span>`;
+
+    // Add message details
+    if (statusData.message) {
+       if (statusData.status === 'completed') {
+           // Update the regex to capture the new format
+           const countsMatch = statusData.message.match(/Baru disimpan: (\d+), Diperbarui: (\d+), Tidak berubah: (\d+), Error: (\d+)/);
+           if (countsMatch) {
+               // Update the format string
+               content += `<span class="d-none d-md-inline">(Disimpan: ${countsMatch[1]}, Diperbarui: ${countsMatch[2]}, Tidak berubah: ${countsMatch[3]}, Error: ${countsMatch[4]})</span>`;
+           } else {
+               content += `<span class="d-none d-md-inline">(${statusData.message})</span>`; // Fallback
+           }
+       } else if (statusData.status === 'failed') {
+           const errorDetail = statusData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
+           content += `<span class="text-danger d-none d-md-inline">(Error: ${errorDetail})</span>`;
+       } else if (statusData.status === 'running') {
+           // Optionally add a message for running state if needed
+       }
+    }
+
+    row.innerHTML = content;
+  }
+
+  // --- Function to update the crawl button state ---
+  function updateCrawlButtonState(statusData) {
+      const button = document.getElementById('crawlButton');
+      const spinner = document.getElementById('crawlSpinner');
+      const buttonText = document.getElementById('crawlButtonText');
+      if (!button || !spinner || !buttonText) return;
+
+      // Disable button if *any* scrape (manual or auto) is running
+      const isAnyScrapeRunning = statusData && statusData.status === 'running';
+
+      if (isAnyScrapeRunning) {
+          button.disabled = true;
+          spinner.classList.remove('d-none');
+          buttonText.textContent = 'Sedang Scrape...';
+      } else {
+          button.disabled = false;
+          spinner.classList.add('d-none');
+          buttonText.textContent = 'Scrape Ulasan Google Maps'; // Reset text
+      }
+  }
+  // ---
+
+  // --- Function to initialize SSE connection ---
+  function initializeSSE() {
+    const eventSource = new EventSource('/reviews/status-stream');
+
+    eventSource.onopen = function() {
+      console.log("SSE Connection opened.");
+    };
+
+    eventSource.addEventListener('statusUpdate', function(event) {
+      console.log("SSE statusUpdate received:", event.data);
+      try {
+        const statusData = JSON.parse(event.data);
+        updateScrapeStatusRow(statusData); // Update the info row
+        updateCrawlButtonState(statusData); // Update the button state
+      } catch (e) {
+        console.error("Failed to parse SSE data:", e);
+      }
+    });
+
+     eventSource.addEventListener('connected', function(event) {
+        console.log("SSE Server connected message:", event.data);
+     });
+
+    eventSource.onerror = function(err) {
+      console.error("EventSource failed:", err);
+      // Optional: Implement reconnection logic or notify user
+      eventSource.close();
+      // Example: Retry after 5 seconds
+      // setTimeout(initializeSSE, 5000);
+    };
+  }
+  // ---
+
   function setupAutoScrape() {
     // Open modal with current settings
     document.getElementById('autoScrapeButton').addEventListener('click', async function() {
+      const lastAutoScrapeInfoDiv = document.getElementById('lastAutoScrapeInfo');
+      lastAutoScrapeInfoDiv.innerHTML = '<span class="placeholder-glow"><span class="placeholder col-6"></span></span>'; // Show placeholder
+
       try {
         const response = await fetch('/reviews/auto-scrape-settings');
         const settings = await response.json();
-        
+
         // Populate the form with current settings
         document.getElementById('autoScrapeEnabled').checked = settings.enabled;
-        
-        // Show last and next scrape times
-        if (settings.lastScrape) {
-          document.getElementById('lastScrape').value = new Date(settings.lastScrape).toLocaleString('id-ID');
-        } else {
-          document.getElementById('lastScrape').value = 'Tidak Pernah';
-        }
-        
+
+        // Show next scrape time
         if (settings.nextScrape && settings.enabled) {
           document.getElementById('nextScrape').value = new Date(settings.nextScrape).toLocaleString('id-ID');
         } else {
           document.getElementById('nextScrape').value = 'Tidak terjadwal';
         }
-        
+
+        // --- Populate Last Auto Scrape Info ---
+        if (settings.lastAutoScrape) {
+          const lastData = settings.lastAutoScrape;
+          let statusIcon = lastData.status === 'completed' ? 'check-circle-fill text-success' : 'x-circle-fill text-danger';
+          let statusText = lastData.status === 'completed' ? 'Selesai' : 'Gagal';
+          let messageDetails = '';
+          if (lastData.message) {
+            if (lastData.status === 'completed') {
+              const countsMatch = lastData.message.match(/Baru disimpan: (\d+), Diperbarui: (\d+), Tidak berubah: (\d+), Error: (\d+)/);
+              if (countsMatch) {
+                messageDetails = `(Disimpan: ${countsMatch[1]}, Diperbarui: ${countsMatch[2]}, Tidak berubah: ${countsMatch[3]}, Error: ${countsMatch[4]})`;
+              } else {
+                messageDetails = `(${lastData.message})`;
+              }
+            } else { // Failed
+               const errorDetail = lastData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
+               messageDetails = `<span class="text-danger">(Error: ${errorDetail})</span>`;
+            }
+          }
+
+          lastAutoScrapeInfoDiv.innerHTML = `
+            <p class="mb-1">
+              <i class="bi bi-calendar-event me-1"></i>
+              <strong>Waktu Selesai:</strong> ${new Date(lastData.endTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+            </p>
+            <p class="mb-0">
+              <i class="bi bi-${statusIcon} me-1"></i>
+              <strong>Status:</strong> ${statusText} ${messageDetails}
+            </p>
+          `;
+        } else {
+          lastAutoScrapeInfoDiv.innerHTML = 'Belum ada riwayat scrape otomatis.';
+        }
+        // ---
+
         // Update status button
         updateAutoScrapeStatusButton(settings.enabled);
-        
+
       } catch (error) {
         console.error('Failed to fetch auto scrape settings:', error);
+        lastAutoScrapeInfoDiv.innerHTML = '<span class="text-danger">Gagal memuat informasi scrape terakhir.</span>';
+        alert('Gagal memuat pengaturan scrape otomatis.');
       }
-      
+
       const autoScrapeModal = new bootstrap.Modal(document.getElementById('autoScrapeModal'));
       autoScrapeModal.show();
     });
-    
+
     // Save settings
     document.getElementById('saveAutoScrape').addEventListener('click', async function() {
       const spinner = document.getElementById('autoScrapeSpinner');
@@ -426,8 +599,13 @@
         const result = await response.json();
         
         if (response.ok) {
-          // Update status button
+          // Update status button and next scrape time display
           updateAutoScrapeStatusButton(formData.enabled);
+          if (result.settings && result.settings.nextScrape && formData.enabled) {
+            document.getElementById('nextScrape').value = new Date(result.settings.nextScrape).toLocaleString('id-ID');
+          } else {
+            document.getElementById('nextScrape').value = 'Tidak terjadwal';
+          }
           modal.hide();
         } else {
           alert(result.message || 'Gagal menyimpan pengaturan');
@@ -441,7 +619,7 @@
         spinner.classList.add('d-none');
       }
     });
-    
+
     // Load current status
     loadAutoScrapeStatus();
   }

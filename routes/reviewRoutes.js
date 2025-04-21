@@ -4,7 +4,8 @@ import {
   handleCrawlRequest,
   exportReviewsToExcel,
   getAutoScrapeSettings,
-  updateAutoScrapeSettings
+  updateAutoScrapeSettings,
+  streamScrapeStatus // Import the new SSE handler
 } from '../controllers/reviewController.js';
 
 const router = express.Router();
@@ -21,5 +22,8 @@ router.get('/reviews/export', exportReviewsToExcel);
 // Routes for auto scrape settings
 router.get('/reviews/auto-scrape-settings', getAutoScrapeSettings);
 router.post('/reviews/auto-scrape-settings', updateAutoScrapeSettings);
+
+// Route for Server-Sent Events status stream
+router.get('/reviews/status-stream', streamScrapeStatus); // Add SSE route
 
 export default router;

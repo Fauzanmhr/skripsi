@@ -5,15 +5,12 @@ const AutoScrapeSetting = sequelize.define('AutoScrapeSetting', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true
+    defaultValue: 1
   },
   enabled: {
     type: DataTypes.BOOLEAN,
+    allowNull: false,
     defaultValue: false
-  },
-  lastScrape: {
-    type: DataTypes.DATE,
-    allowNull: true
   },
   nextScrape: {
     type: DataTypes.DATE,
