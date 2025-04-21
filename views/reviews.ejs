@@ -423,13 +423,13 @@
        if (statusData.status === 'completed') {
            const countsMatch = statusData.message.match(/Baru disimpan: (\d+), Diperbarui: (\d+), Tidak berubah: (\d+), Error: (\d+)/);
            if (countsMatch) {
-               content += `<span class="d-none d-md-inline">(Disimpan: ${countsMatch[1]}, Diperbarui: ${countsMatch[2]}, Tidak berubah: ${countsMatch[3]}, Error: ${countsMatch[4]})</span>`;
+               content += `<span>(Disimpan: ${countsMatch[1]}, Diperbarui: ${countsMatch[2]}, Tidak berubah: ${countsMatch[3]}, Error: ${countsMatch[4]})</span>`;
            } else {
-               content += `<span class="d-none d-md-inline">(${statusData.message})</span>`;
+               content += `<span>(${statusData.message})</span>`;
            }
        } else if (statusData.status === 'failed') {
            const errorDetail = statusData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
-           content += `<span class="text-danger d-none d-md-inline">(Error: ${errorDetail})</span>`;
+           content += `<span class="text-danger">(Error: ${errorDetail})</span>`;
        }
     }
 
