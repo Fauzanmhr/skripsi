@@ -16,11 +16,6 @@ const CRON_EXPRESSION = '0 0 * * *';
 let currentJob = null;
 let settings = { ...DEFAULT_SETTINGS };
 
-// Placeholder for the broadcast function to be injected
-let notifyStatusUpdate = (statusRecord) => {
-  console.warn("notifyStatusUpdate function not injected into autoScrapeService yet.");
-};
-
 // Helper function to get the current time at midnight
 const getNextMidnight = () => {
   const now = new Date();
@@ -151,7 +146,6 @@ function scheduleAutoScrape() {
         startTime: startTime
       });
       console.log(`Running auto scrape at ${startTime.toLocaleString()}`);
-      notifyStatusUpdate(scrapeRecord.toJSON()); // Broadcast 'running'
 
       const googleMapsURL = process.env.GOOGLE_MAPS_URL;
       const result = await crawlAndSaveReviews(googleMapsURL); // result now includes 'skipped'
@@ -166,7 +160,6 @@ function scheduleAutoScrape() {
         endTime: endTime,
         message: message
       });
-      notifyStatusUpdate(scrapeRecord.toJSON()); // Broadcast 'completed'
 
       // Update next scrape time in settings
       settings.nextScrape = getNextMidnight();
@@ -197,7 +190,6 @@ function scheduleAutoScrape() {
           finalStatus = { type: 'auto', status: 'failed', startTime: startTime, endTime: endTime, message: errorMessage + " (DB creation failed)" };
         }
       }
-      notifyStatusUpdate(finalStatus); // Broadcast 'failed'
     }
   });
 
@@ -226,14 +218,8 @@ export async function resetStaleScrapesOnStartup() {
   }
 }
 
-// Initialize the auto scrape service - Inject the broadcast function
-export function initAutoScrapeService(broadcastFunction) { // Accept the function
-  if (typeof broadcastFunction === 'function') {
-    notifyStatusUpdate = broadcastFunction; // Assign it
-    console.log("SSE broadcast function injected into autoScrapeService.");
-  } else {
-    console.error("Failed to inject SSE broadcast function into autoScrapeService.");
-  }
+// Initialize the auto scrape service
+export function initAutoScrapeService() {
   loadSettings().catch(error => {
     console.error('Error initializing auto scrape service:', error);
   });

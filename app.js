@@ -9,7 +9,6 @@ import analyzeRoutes from './routes/analyzeRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
 import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
 import { sequelize } from './config/database.js';
-import { broadcastStatusUpdate } from './controllers/reviewController.js';
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -73,8 +72,8 @@ async function startServer() {
     // Start the sentiment analysis background job
     startSentimentAnalysisJob();
 
-    // Initialize auto scrape service, passing the broadcast function
-    initAutoScrapeService(broadcastStatusUpdate);
+    // Initialize auto scrape service
+    initAutoScrapeService();
 
     // Start the server
     app.listen(PORT, () => {

@@ -4,18 +4,6 @@ import { Op } from 'sequelize';
 import { generateReviewsExcel } from '../services/exportService.js';
 import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
-import crypto from 'crypto'; // For generating unique client IDs
-
-// --- SSE Client Management ---
-let clients = []; // Store connected SSE clients
-
-// Function to broadcast data to all connected clients
-export function broadcastStatusUpdate(data) { // Export for use in autoScrapeService
-  const message = `id: ${new Date().getTime()}\nevent: statusUpdate\ndata: ${JSON.stringify(data)}\n\n`;
-  console.log(`Broadcasting SSE update to ${clients.length} clients.`);
-  clients.forEach(client => client.res.write(message));
-}
-// ---
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -157,7 +145,6 @@ export async function handleCrawlRequest(req, res) {
     // Check if another scrape is already running
     const runningScrape = await ScrapeStatus.findOne({ where: { status: 'running' } });
     if (runningScrape) {
-      // Return 409 without broadcasting, as no status *changed*
       return res.status(409).json({
         success: false,
         message: `Scrape tidak dapat dimulai: Scrape lain (${runningScrape.type}) sedang berjalan.`,
@@ -174,13 +161,11 @@ export async function handleCrawlRequest(req, res) {
       status: 'running',
       startTime: startTime
     });
-    broadcastStatusUpdate(scrapeRecord.toJSON()); // Broadcast 'running' status
 
     // Perform the crawl (this might take time)
     const googleMapsURL = process.env.GOOGLE_MAPS_URL;
-    const result = await crawlAndSaveReviews(googleMapsURL); // result now includes 'skipped'
+    const result = await crawlAndSaveReviews(googleMapsURL);
     const endTime = new Date();
-    // Update the message format
     const message = `Crawling selesai. Baru disimpan: ${result.saved}, Diperbarui: ${result.updated}, Tidak berubah: ${result.skipped}, Error: ${result.errors}`;
 
     // Update ScrapeStatus to completed
@@ -189,11 +174,11 @@ export async function handleCrawlRequest(req, res) {
       endTime: endTime,
       message: message
     });
-    broadcastStatusUpdate(scrapeRecord.toJSON()); // Broadcast 'completed' status
 
+    // Respond immediately - client will poll for status updates
     res.json({
       success: true,
-      message: message,
+      message: "Scrape process initiated successfully.",
       scrapeRecord: scrapeRecord.toJSON()
     });
 
@@ -232,8 +217,8 @@ export async function handleCrawlRequest(req, res) {
           finalStatus = { type: 'manual', status: 'failed', startTime: startTime, endTime: endTime, message: errorMessage + " (DB creation failed)" };
        }
     }
-    broadcastStatusUpdate(finalStatus); // Broadcast 'failed' status
 
+    // Respond with error - client will poll for status updates if needed
     res.status(500).json({
       success: false,
       message: errorMessage,
@@ -368,42 +353,15 @@ export async function updateAutoScrapeSettings(req, res) {
   }
 }
 
-// --- Controller for SSE Status Stream ---
-export async function streamScrapeStatus(req, res) {
-  // Set headers for SSE
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  // Generate a unique ID for this client
-  const clientId = crypto.randomBytes(8).toString('hex');
-  const newClient = {
-    id: clientId,
-    res: res // Store only the response object
-  };
-
-  clients.push(newClient); // Add client to the list
-  console.log(`SSE Client connected. ID: ${clientId}. Total clients: ${clients.length}`);
-
-  // Send connection confirmation
-  res.write('event: connected\ndata: Connection established\n\n');
-
-  // Send the very latest status upon connection by ID
+// Controller for AJAX Status Polling
+export async function getLatestScrapeStatus(req, res) {
   try {
-    const latestStatus = await ScrapeStatus.findOne({ order: [['id', 'DESC']] });
-    if (latestStatus) {
-       const message = `id: ${new Date().getTime()}\nevent: statusUpdate\ndata: ${JSON.stringify(latestStatus.toJSON())}\n\n`;
-       res.write(message);
-    }
+    const latestStatus = await ScrapeStatus.findOne({
+      order: [['id', 'DESC']] // Get the absolute latest record
+    });
+    res.json(latestStatus ? latestStatus.toJSON() : null);
   } catch (error) {
-      console.error("Error sending initial status on SSE connect:", error);
+    console.error("Error fetching latest scrape status:", error);
+    res.status(500).json({ message: "Failed to fetch status" });
   }
-
-  // Handle client disconnection
-  req.on('close', () => {
-    clients = clients.filter(c => c.id !== clientId); // Remove client from the list
-    console.log(`SSE Client disconnected. ID: ${clientId}. Total clients: ${clients.length}`);
-  });
 }
-// ---

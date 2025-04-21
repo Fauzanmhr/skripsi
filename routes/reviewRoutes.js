@@ -5,7 +5,7 @@ import {
   exportReviewsToExcel,
   getAutoScrapeSettings,
   updateAutoScrapeSettings,
-  streamScrapeStatus // Import the new SSE handler
+  getLatestScrapeStatus // Add new controller function
 } from '../controllers/reviewController.js';
 
 const router = express.Router();
@@ -23,7 +23,7 @@ router.get('/reviews/export', exportReviewsToExcel);
 router.get('/reviews/auto-scrape-settings', getAutoScrapeSettings);
 router.post('/reviews/auto-scrape-settings', updateAutoScrapeSettings);
 
-// Route for Server-Sent Events status stream
-router.get('/reviews/status-stream', streamScrapeStatus); // Add SSE route
+// Route for AJAX polling
+router.get('/reviews/latest-status', getLatestScrapeStatus);
 
 export default router;

@@ -212,6 +212,9 @@
   // Store initial status data passed from server
   const initialLatestScrapeStatus = <%- JSON.stringify(latestScrapeStatus || null) %>;
 
+  let pollingIntervalId = null; // Variable to hold the interval ID
+  const POLLING_INTERVAL_MS = 1000; // Poll every 1 second
+
   document.addEventListener('DOMContentLoaded', function() {
     // Apply colors to sentiment badges
     applySentimentBadgeColors();
@@ -231,14 +234,12 @@
     // Set up auto scrape button
     setupAutoScrape();
 
-    // Initial render of the scrape status row
+    // Initial render of the scrape status row and button
     updateScrapeStatusRow(initialLatestScrapeStatus);
-    // update button state initially
     updateCrawlButtonState(initialLatestScrapeStatus);
 
-    // --- Initialize SSE Connection ---
-    initializeSSE();
-    // ---
+    // --- Start AJAX Polling ---
+    startPolling();
   });
   
   function applySentimentBadgeColors() {
@@ -315,16 +316,13 @@
   async function performCrawl(button, spinnerId, buttonTextId, endpoint) {
     const spinner = document.getElementById(spinnerId);
     const buttonText = document.getElementById(buttonTextId);
-    const originalButtonText = 'Scrape Ulasan Google Maps'; // Define original text
 
-    // UI update for 'running' state will be handled by SSE broadcast
+    // Immediately disable button for feedback
+    button.disabled = true;
+    spinner.classList.remove('d-none');
+    buttonText.textContent = 'Sedang Scrape...';
 
     try {
-      // Disable button and show spinner for immediate feedback
-      button.disabled = true;
-      spinner.classList.remove('d-none');
-      buttonText.textContent = 'Sedang Scrape...';
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -332,38 +330,28 @@
 
       const result = await response.json();
 
-      // Server broadcasted the final status (success/failure) via SSE.
-      // Client receives it via 'statusUpdate' listener in initializeSSE.
-
       if (response.ok) {
-        // SUCCESS: No manual UI update or reload needed here.
-        console.log("Crawl request successful, waiting for SSE update for final status.");
-        // If scrape completes very quickly, SSE might arrive before fetch returns.
-        // The button state will be corrected by the SSE handler.
+        console.log("Crawl request successful:", result.message);
+        // UI update (running status, completion, failure) will be handled by the next polling interval.
       } else {
-        // REQUEST FAILED (e.g., 409 Conflict, 500 before broadcast):
-        // SSE might not have broadcasted failure. Update button state locally as fallback.
+        // REQUEST FAILED (e.g., 409 Conflict, 500)
         console.error("Scrape request failed:", result.message || 'Unknown error');
-        // Alert the user about the immediate failure (e.g., conflict)
         alert(`Error: ${result.message || 'Terjadi kesalahan saat memulai scrape'}`);
-        // Re-enable button if the request itself failed (like 409 conflict)
-        // The SSE handler will manage the button state if the scrape *process* fails later.
-        if (response.status === 409) { // Specifically re-enable on conflict
-             updateCrawlButtonState({ status: 'idle' }); // Reset button as if idle
-        }
-        // For other errors (500), the SSE 'failed' message should handle the button state.
+        // Manually update button state as polling might not reflect this immediate failure correctly
+        updateCrawlButtonState({ status: 'idle' }); // Reset button
       }
     } catch (error) {
-      // NETWORK/FETCH ERROR: SSE won't be triggered. Update UI locally.
+      // NETWORK/FETCH ERROR
       console.error('Crawl operation fetch failed:', error);
+      // Update UI locally as the request didn't reach the server
       updateScrapeStatusRow({
           type: 'manual',
           status: 'failed',
-          startTime: new Date(), // Approximate start
+          startTime: new Date(),
           endTime: new Date(),
           message: `Fetch error: ${error.message}`
       });
-      updateCrawlButtonState({ status: 'failed' }); // Update button on fetch error
+      updateCrawlButtonState({ status: 'failed' }); // Reset button
       alert('Gagal menghubungi server untuk memulai scrape. Periksa koneksi Anda.');
     }
   }
@@ -433,19 +421,15 @@
     // Add message details
     if (statusData.message) {
        if (statusData.status === 'completed') {
-           // Update the regex to capture the new format
            const countsMatch = statusData.message.match(/Baru disimpan: (\d+), Diperbarui: (\d+), Tidak berubah: (\d+), Error: (\d+)/);
            if (countsMatch) {
-               // Update the format string
                content += `<span class="d-none d-md-inline">(Disimpan: ${countsMatch[1]}, Diperbarui: ${countsMatch[2]}, Tidak berubah: ${countsMatch[3]}, Error: ${countsMatch[4]})</span>`;
            } else {
-               content += `<span class="d-none d-md-inline">(${statusData.message})</span>`; // Fallback
+               content += `<span class="d-none d-md-inline">(${statusData.message})</span>`;
            }
        } else if (statusData.status === 'failed') {
            const errorDetail = statusData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
            content += `<span class="text-danger d-none d-md-inline">(Error: ${errorDetail})</span>`;
-       } else if (statusData.status === 'running') {
-           // Optionally add a message for running state if needed
        }
     }
 
@@ -459,7 +443,7 @@
       const buttonText = document.getElementById('crawlButtonText');
       if (!button || !spinner || !buttonText) return;
 
-      // Disable button if *any* scrape (manual or auto) is running
+      // Disable button if *any* scrape is running
       const isAnyScrapeRunning = statusData && statusData.status === 'running';
 
       if (isAnyScrapeRunning) {
@@ -472,62 +456,49 @@
           buttonText.textContent = 'Scrape Ulasan Google Maps'; // Reset text
       }
   }
-  // ---
 
-  // --- Function to initialize SSE connection ---
-  function initializeSSE() {
-    const eventSource = new EventSource('/reviews/status-stream');
-
-    eventSource.onopen = function() {
-      console.log("SSE Connection opened.");
-    };
-
-    eventSource.addEventListener('statusUpdate', function(event) {
-      console.log("SSE statusUpdate received:", event.data);
-      try {
-        const statusData = JSON.parse(event.data);
-        updateScrapeStatusRow(statusData); // Update the info row
-        updateCrawlButtonState(statusData); // Update the button state
-      } catch (e) {
-        console.error("Failed to parse SSE data:", e);
+  // --- AJAX Polling Functions ---
+  async function fetchLatestStatus() {
+    try {
+      const response = await fetch('/reviews/latest-status');
+      if (!response.ok) {
+        console.error('Polling failed:', response.statusText);
+        return;
       }
-    });
-
-     eventSource.addEventListener('connected', function(event) {
-        console.log("SSE Server connected message:", event.data);
-     });
-
-    eventSource.onerror = function(err) {
-      console.error("EventSource failed:", err);
-      // Optional: Implement reconnection logic or notify user
-      eventSource.close();
-      // Example: Retry after 5 seconds
-      // setTimeout(initializeSSE, 5000);
-    };
+      const statusData = await response.json();
+      updateScrapeStatusRow(statusData);
+      updateCrawlButtonState(statusData);
+    } catch (error) {
+      console.error('Error during status polling:', error);
+    }
   }
-  // ---
+
+  function startPolling() {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+    }
+    console.log(`Starting AJAX polling every ${POLLING_INTERVAL_MS}ms`);
+    fetchLatestStatus();
+    pollingIntervalId = setInterval(fetchLatestStatus, POLLING_INTERVAL_MS);
+  }
 
   function setupAutoScrape() {
-    // Open modal with current settings
     document.getElementById('autoScrapeButton').addEventListener('click', async function() {
       const lastAutoScrapeInfoDiv = document.getElementById('lastAutoScrapeInfo');
-      lastAutoScrapeInfoDiv.innerHTML = '<span class="placeholder-glow"><span class="placeholder col-6"></span></span>'; // Show placeholder
+      lastAutoScrapeInfoDiv.innerHTML = '<span class="placeholder-glow"><span class="placeholder col-6"></span></span>';
 
       try {
         const response = await fetch('/reviews/auto-scrape-settings');
         const settings = await response.json();
 
-        // Populate the form with current settings
         document.getElementById('autoScrapeEnabled').checked = settings.enabled;
 
-        // Show next scrape time
         if (settings.nextScrape && settings.enabled) {
           document.getElementById('nextScrape').value = new Date(settings.nextScrape).toLocaleString('id-ID');
         } else {
           document.getElementById('nextScrape').value = 'Tidak terjadwal';
         }
 
-        // --- Populate Last Auto Scrape Info ---
         if (settings.lastAutoScrape) {
           const lastData = settings.lastAutoScrape;
           let statusIcon = lastData.status === 'completed' ? 'check-circle-fill text-success' : 'x-circle-fill text-danger';
@@ -541,7 +512,7 @@
               } else {
                 messageDetails = `(${lastData.message})`;
               }
-            } else { // Failed
+            } else {
                const errorDetail = lastData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
                messageDetails = `<span class="text-danger">(Error: ${errorDetail})</span>`;
             }
@@ -560,9 +531,7 @@
         } else {
           lastAutoScrapeInfoDiv.innerHTML = 'Belum ada riwayat scrape otomatis.';
         }
-        // ---
 
-        // Update status button
         updateAutoScrapeStatusButton(settings.enabled);
 
       } catch (error) {
@@ -575,14 +544,12 @@
       autoScrapeModal.show();
     });
 
-    // Save settings
     document.getElementById('saveAutoScrape').addEventListener('click', async function() {
       const spinner = document.getElementById('autoScrapeSpinner');
       const button = this;
       const modal = bootstrap.Modal.getInstance(document.getElementById('autoScrapeModal'));
       
       try {
-        // Show loading state
         button.disabled = true;
         spinner.classList.remove('d-none');
         
@@ -599,7 +566,6 @@
         const result = await response.json();
         
         if (response.ok) {
-          // Update status button and next scrape time display
           updateAutoScrapeStatusButton(formData.enabled);
           if (result.settings && result.settings.nextScrape && formData.enabled) {
             document.getElementById('nextScrape').value = new Date(result.settings.nextScrape).toLocaleString('id-ID');
@@ -620,7 +586,6 @@
       }
     });
 
-    // Load current status
     loadAutoScrapeStatus();
   }
   
