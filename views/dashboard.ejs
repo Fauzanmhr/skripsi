@@ -5,7 +5,7 @@
     <!-- Sentiment Cards Row -->
     <div class="row justify-content-center mt-4">
       <!-- Total Data Card -->
-      <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-4">
+      <div class="col-lg-2 col-md-4 col-6 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
             <h6 class="card-subtitle mb-2 text-muted">Total Ulasan</h6>
@@ -20,7 +20,7 @@
       <!-- Sentiment Cards -->
       <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
       <% sentimentCards.forEach(sentiment => { %>
-        <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-4">
+        <div class="col-lg-2 col-md-4 col-6 mb-4">
           <div class="card h-100">
             <div class="card-body text-center">
               <h6 class="card-subtitle mb-2 text-muted"><%= sentiment.charAt(0).toUpperCase() + sentiment.slice(1) %></h6>
@@ -35,7 +35,7 @@
     </div>
     
     <!-- All Time Chart Row -->
-    <div class="row w-100 justify-content-center">
+    <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header">
@@ -51,7 +51,7 @@
     </div>
     
     <!-- Filtered Chart Row -->
-    <div class="row w-100 justify-content-center">
+    <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
@@ -153,7 +153,7 @@
     },
     
     createAllTimeChart: function(labels, data) {
-      this.createSentimentChart(labels, data, 'sentimentChart', 'Sepanjang Waktu', 'bar');
+      this.createSentimentChart(labels, data, 'sentimentChart', 'Semua Waktu', 'bar');
     },
     
     createFilteredChart: function(labels, data) {
@@ -230,7 +230,8 @@
           },
           plugins: {
             title: {
-              display: chartId !== 'sentimentChart',
+              // Always display the title
+              display: true,
               text: `Analisis Sentimen ${periodLabel}`,
               font: {
                 size: 16,
