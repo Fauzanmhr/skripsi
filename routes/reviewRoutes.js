@@ -5,7 +5,8 @@ import {
   exportReviewsToExcel,
   getAutoScrapeSettings,
   updateAutoScrapeSettings,
-  getLatestScrapeStatus // Add new controller function
+  getLatestScrapeStatus,
+  handleUpdateGoogleMapsUrl // Add new controller function
 } from '../controllers/reviewController.js';
 
 const router = express.Router();
@@ -25,5 +26,8 @@ router.post('/reviews/auto-scrape-settings', updateAutoScrapeSettings);
 
 // Route for AJAX polling
 router.get('/reviews/latest-status', getLatestScrapeStatus);
+
+// Google Maps URL settings
+router.post('/reviews/google-maps-url', handleUpdateGoogleMapsUrl);
 
 export default router;

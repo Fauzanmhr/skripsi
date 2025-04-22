@@ -2,6 +2,14 @@
 
 <div class="flex-wrapper">
   <div class="container content">
+    <!-- Warning if Google Maps URL is not configured -->
+    <% if (!googleMapsUrl) { %>
+    <div class="alert alert-warning mt-4 mb-0" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <strong>URL Google Maps belum dikonfigurasi!</strong> Silakan atur URL di halaman ulasan.
+    </div>
+    <% } %>
+  
     <!-- Sentiment Cards Row -->
     <div class="row justify-content-center mt-4">
       <!-- Total Data Card -->

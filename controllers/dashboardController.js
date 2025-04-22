@@ -1,6 +1,7 @@
 import Review from '../models/review.js';
 import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
+import { getGoogleMapsUrl } from '../services/googleMapsUrlService.js';
 
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {
@@ -66,6 +67,9 @@ export async function renderDashboard(req, res) {
       {value: 11, name: 'November'}, {value: 12, name: 'Desember'}
     ];
     
+    // Get Google Maps URL for warning message
+    const googleMapsUrl = await getGoogleMapsUrl();
+
     // Render the dashboard
     res.render('dashboard', {
       title: 'Dasbor Analisis Sentimen',
@@ -80,7 +84,8 @@ export async function renderDashboard(req, res) {
         months,
         years
       },
-      page: 'dashboard'
+      page: 'dashboard',
+      googleMapsUrl: googleMapsUrl // Add Google Maps URL
     });
   } catch (error) {
     console.error('Dashboard rendering error:', error);

@@ -3,6 +3,7 @@ import { crawlAndSaveReviews } from './googleMapsService.js';
 import AutoScrapeSetting from '../models/autoScrapeSetting.js';
 import ScrapeStatus from '../models/scrapeStatus.js'; // Import ScrapeStatus
 import { Op } from 'sequelize'; // Import Op
+import { getGoogleMapsUrl } from './googleMapsUrlService.js'; // Import getGoogleMapsUrl
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -147,7 +148,12 @@ function scheduleAutoScrape() {
       });
       console.log(`Running auto scrape at ${startTime.toLocaleString()}`);
 
-      const googleMapsURL = process.env.GOOGLE_MAPS_URL;
+      // Check if Google Maps URL is configured
+      const googleMapsURL = await getGoogleMapsUrl();
+      if (!googleMapsURL) {
+        throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
+      }
+
       const result = await crawlAndSaveReviews(googleMapsURL); // result now includes 'skipped'
       const endTime = new Date();
       // Update the message format

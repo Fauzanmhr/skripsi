@@ -29,7 +29,7 @@ const ScrapeStatus = sequelize.define('ScrapeStatus', {
     allowNull: true,
   }
 }, {
-  tableName: 'scrape_statuses',
+  tableName: 'scrape_status',
   timestamps: true,
   indexes: [
     {

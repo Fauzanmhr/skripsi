@@ -4,6 +4,8 @@ import { Op } from 'sequelize';
 import { generateReviewsExcel } from '../services/exportService.js';
 import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
+import { getGoogleMapsUrl, updateGoogleMapsUrl } from '../services/googleMapsUrlService.js';
+import { sequelize } from '../config/database.js';
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -104,6 +106,9 @@ export async function renderReviewsPage(req, res) {
         order: [['id', 'DESC']]
     });
 
+    // Get Google Maps URL for settings modal
+    const googleMapsUrl = await getGoogleMapsUrl();
+
     // Render the reviews page
     res.render('reviews', {
       title: 'Data Ulasan',
@@ -125,7 +130,8 @@ export async function renderReviewsPage(req, res) {
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page),
       manualScrapeStatus: runningManualScrape ? runningManualScrape.toJSON() : { status: 'idle' },
-      latestScrapeStatus: latestScrapeStatus ? latestScrapeStatus.toJSON() : null
+      latestScrapeStatus: latestScrapeStatus ? latestScrapeStatus.toJSON() : null,
+      googleMapsUrl: googleMapsUrl // Add Google Maps URL
     });
   } catch (error) {
     console.error('Reviews page rendering error:', error);
@@ -363,5 +369,69 @@ export async function getLatestScrapeStatus(req, res) {
   } catch (error) {
     console.error("Error fetching latest scrape status:", error);
     res.status(500).json({ message: "Failed to fetch status" });
+  }
+}
+
+// Controller to update Google Maps URL
+export async function handleUpdateGoogleMapsUrl(req, res) {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { google_maps_url } = req.body;
+    
+    // Validate URL
+    if (!google_maps_url || !google_maps_url.includes('google.com/maps')) {
+      return res.status(400).json({
+        success: false, 
+        message: 'Invalid Google Maps URL. Please provide a valid Google Maps URL.'
+      });
+    }
+    
+    // Get current URL to check if it's changing
+    const currentUrl = await getGoogleMapsUrl();
+    const isUrlChanging = currentUrl && currentUrl !== google_maps_url;
+    
+    // If URL is changing, delete all existing reviews
+    if (isUrlChanging) {
+      // Delete all reviews
+      await Review.destroy({ 
+        where: {},
+        truncate: true,
+        cascade: true,
+        transaction
+      });
+      
+      // Delete all scrape statuses
+      await ScrapeStatus.destroy({
+        where: {},
+        truncate: true,
+        cascade: true,
+        transaction
+      });
+      
+      console.log('All reviews and scrape statuses deleted due to Google Maps URL change');
+    }
+    
+    // Update setting
+    await updateGoogleMapsUrl(google_maps_url);
+    
+    await transaction.commit();
+    
+    res.json({
+      success: true,
+      message: isUrlChanging ? 
+        'Google Maps URL updated successfully. All existing reviews have been deleted.' : 
+        'Google Maps URL updated successfully.',
+      url: google_maps_url,
+      dataDeleted: isUrlChanging
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error updating Google Maps URL:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update Google Maps URL',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
   }
 }

@@ -1,8 +1,6 @@
 import { scraper } from "google-maps-review-scraper";
 import Review from '../models/review.js';
-
-// Define Google Maps URL from environment variable
-const googleMapsURL = process.env.GOOGLE_MAPS_URL;
+import { getGoogleMapsUrl } from './googleMapsUrlService.js';
 
 // Clean review text by removing extra spaces and trimming
 const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
@@ -10,6 +8,13 @@ const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
 // Fetch reviews from Google Maps
 export async function fetchReviews() {
   try {
+    // Get Google Maps URL from database
+    const googleMapsURL = await getGoogleMapsUrl();
+    
+    if (!googleMapsURL) {
+      throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
+    }
+    
     // Fetch reviews from Google Maps
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
@@ -82,6 +87,12 @@ export async function saveReviewsToDatabase(reviews) {
 // Main function to crawl and save reviews
 export async function crawlAndSaveReviews() {
   try {
+    // Check if Google Maps URL is configured
+    const googleMapsURL = await getGoogleMapsUrl();
+    if (!googleMapsURL) {
+      throw new Error('Google Maps URL is not configured. Please set it in the settings.');
+    }
+    
     const reviews = await fetchReviews();
     return await saveReviewsToDatabase(reviews);
   } catch (error) {

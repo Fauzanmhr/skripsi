@@ -3,12 +3,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as dotenv from 'dotenv';
 import morgan from 'morgan';
+import session from 'express-session';
+import SequelizeStore from 'connect-session-sequelize';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import analyzeRoutes from './routes/analyzeRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
 import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
 import { sequelize } from './config/database.js';
+import { isAuthenticated, setLocals } from './middlewares/authMiddleware.js';
+import { createInitialUser, createInitialAdmin } from './controllers/authController.js';
+import { initializeGoogleMapsUrl } from './services/googleMapsUrlService.js';
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +27,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Setup session store
+const SessionStore = SequelizeStore(session.Store);
+const sessionStore = new SessionStore({
+  db: sequelize,
+});
+
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -29,6 +41,22 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    secure: process.env.NODE_ENV === 'production'
+  }
+}));
+
+// Add the user to locals for all templates
+// This should run on ALL routes, including auth routes
+app.use(setLocals);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -39,8 +67,11 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/
 app.use('/js', express.static(path.join(__dirname, 'node_modules/chart.js/dist')));
 app.use('/icons', express.static(path.join(__dirname, 'node_modules/bootstrap-icons/font')));
 
-// Routes
-app.use('/', dashboardRoutes, reviewRoutes, analyzeRoutes);
+// Auth routes (no authentication required)
+app.use('/', authRoutes);
+
+// Protected routes
+app.use('/', isAuthenticated, dashboardRoutes, reviewRoutes, analyzeRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -62,11 +93,15 @@ app.use((req, res) => {
 // Database sync and server start
 async function startServer() {
   try {
-    // Sync database models
+    // Sync database models and session store
     await sequelize.sync();
+    await sessionStore.sync();
     console.log('Database synchronized successfully');
 
-    // Reset any stale 'running' scrape statuses on startup using the function from autoScrapeService
+    // Create initial user if not exists
+    await createInitialUser();
+
+    // Reset any stale 'running' scrape statuses on startup
     await resetStaleScrapesOnStartup();
 
     // Start the sentiment analysis background job
@@ -74,6 +109,9 @@ async function startServer() {
 
     // Initialize auto scrape service
     initAutoScrapeService();
+
+    // Initialize Google Maps URL
+    await initializeGoogleMapsUrl();
 
     // Start the server
     app.listen(PORT, () => {
