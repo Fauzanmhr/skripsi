@@ -1,7 +1,7 @@
 import Review from '../models/review.js';
 import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
-import { getGoogleMapsUrl } from '../services/googleMapsUrlService.js';
+import { getGoogleMapsUrl } from '../services/googleMapsService.js';
 
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {

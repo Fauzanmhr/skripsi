@@ -1,20 +1,68 @@
 import { scraper } from "google-maps-review-scraper";
 import Review from '../models/review.js';
-import { getGoogleMapsUrl } from './googleMapsUrlService.js';
+import GoogleMapsUrl from '../models/googleMapsUrl.js';
 
 // Clean review text by removing extra spaces and trimming
 const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
 
+export async function getGoogleMapsUrl() {
+  try {
+    const [record] = await GoogleMapsUrl.findOrCreate({
+      where: { id: 1 },
+      defaults: { url: '' }
+    });
+
+    return record.url;
+  } catch (error) {
+    console.error('Error getting Google Maps URL:', error);
+    return '';
+  }
+}
+
+export async function updateGoogleMapsUrl(url) {
+  try {
+    const [record] = await GoogleMapsUrl.findOrCreate({
+      where: { id: 1 },
+      defaults: { url }
+    });
+
+    if (record.url !== url) {
+      record.url = url;
+      await record.save();
+    }
+
+    return record;
+  } catch (error) {
+    console.error('Error updating Google Maps URL:', error);
+    throw error;
+  }
+}
+
+export async function initializeGoogleMapsUrl() {
+  try {
+    const [record] = await GoogleMapsUrl.findOrCreate({
+      where: { id: 1 },
+      defaults: { url: '' }
+    });
+
+    console.log(`Google Maps URL initialized: ${record.url ? record.url.substring(0, 30) + '...' : 'Not configured'}`);
+    return record.url;
+  } catch (error) {
+    console.error('Error initializing Google Maps URL:', error);
+    return '';
+  }
+}
+
 // Fetch reviews from Google Maps
 export async function fetchReviews() {
   try {
-    // Get Google Maps URL from database
+    // Get Google Maps URL from database (using the merged function)
     const googleMapsURL = await getGoogleMapsUrl();
-    
+
     if (!googleMapsURL) {
       throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
     }
-    
+
     // Fetch reviews from Google Maps
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
@@ -22,7 +70,7 @@ export async function fetchReviews() {
       // pages: 10,
       clean: true
     });
-    
+
     // Parse JSON response
     let parsedReviews;
     try {
@@ -30,7 +78,7 @@ export async function fetchReviews() {
     } catch (parseError) {
       throw new Error(`Failed to parse reviews data: ${parseError.message}`);
     }
-    
+
     // Filter and map reviews
     return parsedReviews
       .filter(review => review.review?.text?.trim())
@@ -87,12 +135,12 @@ export async function saveReviewsToDatabase(reviews) {
 // Main function to crawl and save reviews
 export async function crawlAndSaveReviews() {
   try {
-    // Check if Google Maps URL is configured
+    // Check if Google Maps URL is configured (using the merged function)
     const googleMapsURL = await getGoogleMapsUrl();
     if (!googleMapsURL) {
       throw new Error('Google Maps URL is not configured. Please set it in the settings.');
     }
-    
+
     const reviews = await fetchReviews();
     return await saveReviewsToDatabase(reviews);
   } catch (error) {

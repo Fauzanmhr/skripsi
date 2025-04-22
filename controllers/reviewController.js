@@ -1,10 +1,9 @@
 import Review from '../models/review.js';
-import { crawlAndSaveReviews } from '../services/googleMapsService.js';
+import { crawlAndSaveReviews, getGoogleMapsUrl, updateGoogleMapsUrl } from '../services/googleMapsService.js';
 import { Op } from 'sequelize';
 import { generateReviewsExcel } from '../services/exportService.js';
 import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
-import { getGoogleMapsUrl, updateGoogleMapsUrl } from '../services/googleMapsUrlService.js';
 import { sequelize } from '../config/database.js';
 
 // Helper function to generate pagination url
@@ -107,7 +106,7 @@ export async function renderReviewsPage(req, res) {
     });
 
     // Get Google Maps URL for settings modal
-    const googleMapsUrl = await getGoogleMapsUrl();
+    const googleMapsUrl = await getGoogleMapsUrl(); // Function now comes from googleMapsService
 
     // Render the reviews page
     res.render('reviews', {
@@ -388,7 +387,7 @@ export async function handleUpdateGoogleMapsUrl(req, res) {
     }
     
     // Get current URL to check if it's changing
-    const currentUrl = await getGoogleMapsUrl();
+    const currentUrl = await getGoogleMapsUrl(); // Function now comes from googleMapsService
     const isUrlChanging = currentUrl && currentUrl !== google_maps_url;
     
     // If URL is changing, delete all existing reviews
@@ -413,7 +412,7 @@ export async function handleUpdateGoogleMapsUrl(req, res) {
     }
     
     // Update setting
-    await updateGoogleMapsUrl(google_maps_url);
+    await updateGoogleMapsUrl(google_maps_url); // Function now comes from googleMapsService
     
     await transaction.commit();
     

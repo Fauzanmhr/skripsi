@@ -1,9 +1,8 @@
 import cron from 'node-cron';
-import { crawlAndSaveReviews } from './googleMapsService.js';
+import { crawlAndSaveReviews, getGoogleMapsUrl } from './googleMapsService.js';
 import AutoScrapeSetting from '../models/autoScrapeSetting.js';
-import ScrapeStatus from '../models/scrapeStatus.js'; // Import ScrapeStatus
-import { Op } from 'sequelize'; // Import Op
-import { getGoogleMapsUrl } from './googleMapsUrlService.js'; // Import getGoogleMapsUrl
+import ScrapeStatus from '../models/scrapeStatus.js';
+import { Op } from 'sequelize';
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -149,7 +148,7 @@ function scheduleAutoScrape() {
       console.log(`Running auto scrape at ${startTime.toLocaleString()}`);
 
       // Check if Google Maps URL is configured
-      const googleMapsURL = await getGoogleMapsUrl();
+      const googleMapsURL = await getGoogleMapsUrl(); // Function now comes from googleMapsService
       if (!googleMapsURL) {
         throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
       }

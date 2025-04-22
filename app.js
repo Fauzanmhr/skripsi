@@ -14,7 +14,7 @@ import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/au
 import { sequelize } from './config/database.js';
 import { isAuthenticated, setLocals } from './middlewares/authMiddleware.js';
 import { createInitialUser } from './controllers/authController.js';
-import { initializeGoogleMapsUrl } from './services/googleMapsUrlService.js';
+import { initializeGoogleMapsUrl } from './services/googleMapsService.js';
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
