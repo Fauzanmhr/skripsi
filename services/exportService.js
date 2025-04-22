@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale'; // Import Indonesian locale
 
 // Service function to generate Excel workbook
 export async function generateReviewsExcel(reviews) {

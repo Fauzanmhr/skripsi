@@ -2,7 +2,6 @@ import cron from 'node-cron';
 import { crawlAndSaveReviews, getGoogleMapsUrl } from './googleMapsService.js';
 import AutoScrapeSetting from '../models/autoScrapeSetting.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
-import { Op } from 'sequelize';
 
 // Default settings
 const DEFAULT_SETTINGS = {

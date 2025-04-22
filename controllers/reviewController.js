@@ -94,12 +94,6 @@ export async function renderReviewsPage(req, res) {
     // Create a list of distinct sentiments for the filter dropdowns
     const availableSentiments = sentiments.map(item => item.sentiment);
 
-    // Get current running manual scrape status (for button state only)
-    const runningManualScrape = await ScrapeStatus.findOne({
-        where: { type: 'manual', status: 'running' },
-        order: [['startTime', 'DESC']]
-    });
-
     // Get the single latest scrape status entry (any type, any status) by ID
     const latestScrapeStatus = await ScrapeStatus.findOne({
         order: [['id', 'DESC']]
@@ -128,7 +122,6 @@ export async function renderReviewsPage(req, res) {
       },
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page),
-      manualScrapeStatus: runningManualScrape ? runningManualScrape.toJSON() : { status: 'idle' },
       latestScrapeStatus: latestScrapeStatus ? latestScrapeStatus.toJSON() : null,
       googleMapsUrl: googleMapsUrl // Add Google Maps URL
     });

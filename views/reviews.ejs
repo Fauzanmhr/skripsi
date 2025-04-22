@@ -122,10 +122,9 @@
             <i class="bi bi-clock-history me-2"></i>
             <span id="autoScrapeStatus">Scrape Otomatis</span>
           </button>
-          <button id="crawlButton" class="btn btn-primary d-flex align-items-center"
-                  <%= manualScrapeStatus.status === 'running' ? 'disabled' : '' %>>
-            <span class="spinner-border spinner-border-sm me-2 <%= manualScrapeStatus.status === 'running' ? '' : 'd-none' %>" role="status" aria-hidden="true" id="crawlSpinner"></span>
-            <span id="crawlButtonText"><%= manualScrapeStatus.status === 'running' ? 'Sedang Scrape...' : 'Scrape Ulasan Google Maps' %></span>
+          <button id="crawlButton" class="btn btn-primary d-flex align-items-center">
+            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" id="crawlSpinner"></span>
+            <span id="crawlButtonText">Scrape Ulasan Google Maps</span>
           </button>
         </div>
       </div>
@@ -287,9 +286,6 @@
     // Apply colors to sentiment badges
     applySentimentBadgeColors();
     
-    // Initialize tooltips
-    initTooltips();
-    
     // Set up crawl button
     setupCrawlButton();
     
@@ -328,15 +324,6 @@
       if (badgeColors[sentiment]) {
         badge.style.backgroundColor = badgeColors[sentiment];
       }
-    });
-  }
-  
-  function initTooltips() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl, {
-        html: true
-      });
     });
   }
   
@@ -780,13 +767,13 @@
           
           // Show success message with appropriate text
           if (result.dataDeleted) {
-            showAlert('Google Maps URL updated and all existing data has been deleted.', 'warning');
+            showModalError('Google Maps URL updated and all existing data has been deleted.', 'warning');
             // Reload page after a brief delay
             setTimeout(() => {
               window.location.reload();
             }, 1500);
           } else {
-            showAlert('Google Maps URL updated successfully.', 'success');
+            showModalError('Google Maps URL updated successfully.', 'success');
           }
         } else {
           // Show error inside modal
