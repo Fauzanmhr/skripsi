@@ -13,7 +13,7 @@ import { startSentimentAnalysisJob } from './services/sentimentService.js';
 import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
 import { sequelize } from './config/database.js';
 import { isAuthenticated, setLocals } from './middlewares/authMiddleware.js';
-import { createInitialUser, createInitialAdmin } from './controllers/authController.js';
+import { createInitialUser } from './controllers/authController.js';
 import { initializeGoogleMapsUrl } from './services/googleMapsUrlService.js';
 
 // Get __dirname equivalent in ES module

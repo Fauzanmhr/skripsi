@@ -54,26 +54,6 @@ export function handleLogout(req, res) {
   });
 }
 
-// Create first admin user (for initial setup)
-export async function createInitialAdmin() {
-  try {
-    const adminCount = await User.count();
-    
-    // Only create admin if no users exist
-    if (adminCount === 0) {
-      await User.create({
-        username: 'admin',
-        password: 'admin123', // This will be hashed by the model hooks
-        isAdmin: true
-      });
-      
-      console.log('Initial admin user created');
-    }
-  } catch (error) {
-    console.error('Error creating initial admin:', error);
-  }
-}
-
 // Create initial user
 export async function createInitialUser() {
   try {
