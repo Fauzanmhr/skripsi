@@ -3,7 +3,7 @@ node_modules
 
 # Ignore Docker-related files and directories
 docker-compose.yaml
-dockerfiles
+Dockerfile
 
 # Ignore OS-specific files
 .DS_Store
