@@ -27,6 +27,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust reverse proxy (e.g., Cloudflare, Nginx)
+app.set('trust proxy', 1);
+
 // Setup session store
 const SessionStore = SequelizeStore(session.Store);
 const sessionStore = new SessionStore({
@@ -48,14 +51,14 @@ app.use(session({
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Trust reverse proxy (e.g., Cloudflare, Nginx)
   cookie: {
     maxAge: 24 * 60 * 60 * 1000, // 1 day
     secure: process.env.NODE_ENV === 'production'
   }
 }));
 
-// Add the user to locals for all templates
-// This should run on ALL routes, including auth routes
+//  middleware to set user and authentication status in locals
 app.use(setLocals);
 
 // Serve static files
