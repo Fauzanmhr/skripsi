@@ -1,4 +1,4 @@
-<%- include('../partials/header', { title: 'Error', page: 'error' }) %>
+<link rel="stylesheet" href="/css/bootstrap.min.css">
 
 <div class="container mt-5">
   <h1 class="text-danger">Error</h1>
@@ -7,5 +7,3 @@
     <pre><%= error.stack %></pre>
   <% } %>
 </div>
-
-<%- include('../partials/footer') %>
