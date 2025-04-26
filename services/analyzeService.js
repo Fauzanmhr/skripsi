@@ -105,7 +105,6 @@ export async function processFileContent(rows, column) {
         sentimen: sentiment
       });
     } catch (error) {
-      console.error(`Kesalahan menganalisis baris: ${error.message}`);
       processedRows.push({
         ...row,
         sentimen: 'GAGAL'

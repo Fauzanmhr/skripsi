@@ -1,10 +1,46 @@
 import Review from '../models/review.js';
-import { crawlAndSaveReviews, getGoogleMapsUrl, updateGoogleMapsUrl } from '../services/googleMapsService.js';
+import { crawlAndSaveReviews, getGoogleMapsUrl, updateGoogleMapsUrl, extractPlaceName } from '../services/googleMapsService.js';
 import { Op } from 'sequelize';
-import { generateReviewsExcel } from '../services/exportService.js';
 import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
 import { sequelize } from '../config/database.js';
+import ExcelJS from 'exceljs';
+import { format } from 'date-fns';
+
+// Helper function to generate Excel workbook
+async function generateReviewsExcel(reviews) {
+  // Create a new workbook
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Ulasan');
+  
+  // Define columns
+  worksheet.columns = [
+    { header: 'Tanggal', key: 'date', width: 15 },
+    { header: 'Ulasan', key: 'review', width: 50 },
+    { header: 'Sentimen', key: 'sentiment', width: 15 }
+  ];
+  
+  // Add rows
+  reviews.forEach(review => {
+    worksheet.addRow({
+      date: format(new Date(review.time_published), 'yyyy-MM-dd'),
+      review: review.review,
+      sentiment: review.sentiment || 'Sedang Diproses'
+    });
+  });
+  
+  // Style header row
+  worksheet.getRow(1).eachCell(cell => {
+    cell.font = { bold: true };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+  });
+  
+  return workbook;
+}
 
 // Helper function to generate pagination url
 function getPageUrl(req, page) {
@@ -101,6 +137,9 @@ export async function renderReviewsPage(req, res) {
 
     // Get Google Maps URL for settings modal
     const googleMapsUrl = await getGoogleMapsUrl(); // Function now comes from googleMapsService
+    
+    // Extract place name from the URL
+    const placeName = extractPlaceName(googleMapsUrl);
 
     // Render the reviews page
     res.render('reviews', {
@@ -123,7 +162,8 @@ export async function renderReviewsPage(req, res) {
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page),
       latestScrapeStatus: latestScrapeStatus ? latestScrapeStatus.toJSON() : null,
-      googleMapsUrl: googleMapsUrl // Add Google Maps URL
+      googleMapsUrl: googleMapsUrl, // Add Google Maps URL
+      placeName: placeName // Add place name
     });
   } catch (error) {
     console.error('Reviews page rendering error:', error);

@@ -8,6 +8,11 @@
       <i class="bi bi-exclamation-triangle-fill me-2"></i>
       <strong>URL Google Maps belum dikonfigurasi!</strong> Silakan atur URL di halaman ulasan.
     </div>
+    <% } else if (placeName) { %>
+    <div class="alert alert-info mt-4 mb-0" role="alert">
+      <i class="bi bi-geo-alt-fill me-2"></i>
+      <strong>Lokasi:</strong> <%= placeName %>
+    </div>
     <% } %>
   
     <!-- Sentiment Cards Row -->

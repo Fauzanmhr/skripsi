@@ -37,7 +37,7 @@ export async function loadSettings() {
       nextScrape: record.nextScrape || getNextMidnight() // Fallback if nextScrape is null
     };
 
-    // Adjust nextScrape if it’s in the past
+    // Adjust nextScrape if it's in the past
     if (settings.nextScrape < new Date()) {
       settings.nextScrape = getNextMidnight();
     }
@@ -49,7 +49,6 @@ export async function loadSettings() {
 
     return settings;
   } catch (error) {
-    console.error('Failed to load auto scrape settings:', error);
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -82,7 +81,6 @@ export async function saveSettings(newSettings) {
     });
 
     await record.update(settingsToSave);
-    console.log('Auto scrape settings saved:', settingsToSave);
 
     // Reschedule the job if enabled
     if (settings.enabled) {
@@ -91,7 +89,6 @@ export async function saveSettings(newSettings) {
 
     return settings;
   } catch (error) {
-    console.error('Failed to save auto scrape settings:', error);
     throw error;
   }
 }
@@ -106,7 +103,6 @@ function cancelAutoScrape() {
   if (currentJob) {
     currentJob.stop();
     currentJob = null;
-    console.log('Auto scrape job cancelled');
   }
 }
 
@@ -116,27 +112,23 @@ function scheduleAutoScrape() {
 
   currentJob = cron.schedule(CRON_EXPRESSION, async () => {
     let scrapeRecord = null;
-    const startTime = new Date(); // Define startTime early
+    const startTime = new Date();
 
     try {
-      console.log(`Checking auto scrape conditions at ${new Date().toLocaleString()}`);
-
       // Check if another AUTO scrape is already running
       const runningAutoScrape = await ScrapeStatus.findOne({
         where: {
           status: 'running',
-          type: 'auto' // Only check for other 'auto' scrapes
+          type: 'auto'
         }
       });
+      
       if (runningAutoScrape) {
-        // If an AUTO scrape is found with status 'running', log and exit.
-        console.log(`Auto scrape skipped: Another auto scrape is already running.`);
-        return; // This stops the auto-scrape execution for this scheduled time.
+        return; // Exit if another auto scrape is running
       }
 
       // Clean up old 'auto' logs before starting
       await ScrapeStatus.destroy({ where: { type: 'auto' } });
-      console.log("Cleaned up previous 'auto' scrape logs.");
 
       // Record start in ScrapeStatus
       scrapeRecord = await ScrapeStatus.create({
@@ -144,19 +136,16 @@ function scheduleAutoScrape() {
         status: 'running',
         startTime: startTime
       });
-      console.log(`Running auto scrape at ${startTime.toLocaleString()}`);
 
       // Check if Google Maps URL is configured
-      const googleMapsURL = await getGoogleMapsUrl(); // Function now comes from googleMapsService
+      const googleMapsURL = await getGoogleMapsUrl();
       if (!googleMapsURL) {
         throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
       }
 
-      const result = await crawlAndSaveReviews(googleMapsURL); // result now includes 'skipped'
+      const result = await crawlAndSaveReviews(googleMapsURL);
       const endTime = new Date();
-      // Update the message format
       const message = `Auto scrape selesai. Baru disimpan: ${result.saved}, Diperbarui: ${result.updated}, Tidak berubah: ${result.skipped}, Error: ${result.errors}`;
-      console.log(message);
 
       // Update ScrapeStatus to completed
       await scrapeRecord.update({
@@ -175,7 +164,6 @@ function scheduleAutoScrape() {
     } catch (error) {
       const endTime = new Date();
       const errorMessage = `Auto scrape failed: ${error.message}`;
-      console.error(errorMessage);
       let finalStatus = null;
 
       // Update ScrapeStatus to failed
@@ -196,14 +184,11 @@ function scheduleAutoScrape() {
       }
     }
   });
-
-  console.log(`Auto scrape scheduled at midnight. Next run: ${settings.nextScrape ? settings.nextScrape.toLocaleString() : 'Not scheduled'}`);
 }
 
 /**
  * Resets any scrape statuses that were left in 'running' state,
  * likely due to a server restart or crash.
- * Should be called once on application startup.
  */
 export async function resetStaleScrapesOnStartup() {
   try {
@@ -211,20 +196,14 @@ export async function resetStaleScrapesOnStartup() {
       { status: 'failed', message: 'Scrape interrupted due to server restart.', endTime: new Date() },
       { where: { status: 'running' } }
     );
-    if (interruptedCount[0] > 0) {
-      console.log(`Reset ${interruptedCount[0]} stale 'running' scrape statuses.`);
-    } else {
-      console.log('No stale scrape statuses found to reset.');
-    }
   } catch (error) {
-    console.error('Error resetting stale scrape statuses:', error);
-    // Decide if this error should prevent server start or just be logged
+    // Continue execution even if this fails
   }
 }
 
 // Initialize the auto scrape service
 export function initAutoScrapeService() {
-  loadSettings().catch(error => {
-    console.error('Error initializing auto scrape service:', error);
+  loadSettings().catch(() => {
+    // Silent catch to prevent startup failure
   });
 }

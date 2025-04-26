@@ -21,12 +21,10 @@ export async function analyzeSentiment(review) {
     // If we received a review object (from database), update it
     if (typeof review !== 'string' && review.update) {
       await review.update({ sentiment: response.data.sentiment });
-      console.log(`Successfully analyzed review ${review.id}: ${response.data.sentiment}`);
     }
     
     return response.data.sentiment;
   } catch (error) {
-    console.error('Error analyzing review:', error.message);
     throw error;
   }
 }
@@ -41,23 +39,17 @@ async function processPendingReviews() {
     });
     
     if (pendingReviews.length === 0) {
-      console.log('No pending reviews to process.');
       return;
     }
-    
-    console.log(`Processing ${pendingReviews.length} pending reviews`);
     
     // Process reviews one by one (sequentially)
     for (const review of pendingReviews) {
       try {
         await analyzeSentiment(review);
       } catch (error) {
-        console.error(`Failed to process review ${review.id}:`, error.message);
-        // Continue with the next review even if one fails
       }
     }
   } catch (error) {
-    console.error('Error in processPendingReviews:', error);
   }
 }
 
@@ -68,14 +60,10 @@ export function startSentimentAnalysisJob() {
   
   // Schedule the job
   cron.schedule(cronSchedule, async () => {
-    console.log('Running sentiment analysis job at', new Date());
     await processPendingReviews();
   });
   
   // Run immediately on startup
-  processPendingReviews().catch(error => {
-    console.error('Initial processing failed:', error);
+  processPendingReviews().catch(() => {
   });
-  
-  console.log('Sentiment analysis background job scheduled');
 }

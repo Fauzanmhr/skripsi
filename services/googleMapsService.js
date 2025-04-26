@@ -5,6 +5,21 @@ import GoogleMapsUrl from '../models/googleMapsUrl.js';
 // Clean review text by removing extra spaces and trimming
 const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
 
+// Extract place name from Google Maps URL
+export function extractPlaceName(url) {
+  if (!url) return '';
+  
+  try {
+    const placeMatch = url.match(/\/place\/([^/@]+)/);
+    if (placeMatch && placeMatch[1]) {
+      return decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+    }
+    return '';
+  } catch (error) {
+    return '';
+  }
+}
+
 export async function getGoogleMapsUrl() {
   try {
     const [record] = await GoogleMapsUrl.findOrCreate({
@@ -14,7 +29,6 @@ export async function getGoogleMapsUrl() {
 
     return record.url;
   } catch (error) {
-    console.error('Error getting Google Maps URL:', error);
     return '';
   }
 }
@@ -33,7 +47,6 @@ export async function updateGoogleMapsUrl(url) {
 
     return record;
   } catch (error) {
-    console.error('Error updating Google Maps URL:', error);
     throw error;
   }
 }
@@ -44,11 +57,8 @@ export async function initializeGoogleMapsUrl() {
       where: { id: 1 },
       defaults: { url: '' }
     });
-
-    console.log(`Google Maps URL initialized: ${record.url ? record.url.substring(0, 30) + '...' : 'Not configured'}`);
     return record.url;
   } catch (error) {
-    console.error('Error initializing Google Maps URL:', error);
     return '';
   }
 }
@@ -56,7 +66,7 @@ export async function initializeGoogleMapsUrl() {
 // Fetch reviews from Google Maps
 export async function fetchReviews() {
   try {
-    // Get Google Maps URL from database (using the merged function)
+    // Get Google Maps URL from database
     const googleMapsURL = await getGoogleMapsUrl();
 
     if (!googleMapsURL) {
@@ -67,7 +77,6 @@ export async function fetchReviews() {
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest",
       search_query: "",
-      // pages: 10,
       clean: true
     });
 
@@ -88,7 +97,6 @@ export async function fetchReviews() {
         time_published: new Date(review.time.published / 1000)
       })) || [];
   } catch (error) {
-    console.error("Error fetching reviews:", error);
     throw new Error(`Failed to fetch reviews: ${error.message}`);
   }
 }
@@ -124,18 +132,17 @@ export async function saveReviewsToDatabase(reviews) {
         result.saved++;
       }
     } catch (error) {
-      console.error(`Error saving review ${reviewData.id}:`, error);
       result.errors++;
     }
   }
 
-  return result; // Return the result object including 'skipped'
+  return result;
 }
 
 // Main function to crawl and save reviews
 export async function crawlAndSaveReviews() {
   try {
-    // Check if Google Maps URL is configured (using the merged function)
+    // Check if Google Maps URL is configured
     const googleMapsURL = await getGoogleMapsUrl();
     if (!googleMapsURL) {
       throw new Error('Google Maps URL is not configured. Please set it in the settings.');
@@ -144,7 +151,6 @@ export async function crawlAndSaveReviews() {
     const reviews = await fetchReviews();
     return await saveReviewsToDatabase(reviews);
   } catch (error) {
-    console.error("Error in crawl and save process:", error);
     throw error;
   }
 }
