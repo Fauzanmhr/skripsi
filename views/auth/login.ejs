@@ -1,55 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Sentiment Analysis</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png">
-    <link rel="manifest" href="/favicon/site.webmanifest">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/icons/bootstrap-icons.css">
-    <style>
-        html, body {
-            height: 100%;
-            background-color: #f5f5f5;
-        }
-        .login-container {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .form-signin {
-            width: 100%;
-            max-width: 380px;
-            padding: 30px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, a0, 0, 0.1);
-        }
-        .form-signin .form-floating:focus-within {
-            z-index: 2;
-        }
-        .form-signin input[type="text"] {
-            margin-bottom: -1px;
-            border-bottom-right-radius: 0;
-            border-bottom-left-radius: 0;
-        }
-        .form-signin input[type="password"] {
-            margin-bottom: 10px;
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
-        }
-    </style>
-</head>
+<%- include('../partials/header', { title: title, page: page }) %>
 <body>
-    <div class="login-container">
-        <main class="form-signin">
+    <div class="d-flex align-items-center justify-content-center vh-100 bg-light">
+        <main class="form-signin w-100 m-auto p-4 bg-white rounded shadow-sm" style="max-width: 380px;">
             <form action="/login" method="POST">
                 <div class="text-center mb-4">
+                    <img src="/favicon/android-chrome-192x192.png" alt="Logo" width="72" height="72" class="mb-3">
                     <p class="text-muted">Login untuk akses aplikasi</p>
                 </div>
                 
