@@ -1,5 +1,5 @@
 {
-  "name": "sentiment-analysis-dashboard",
+  "name": "sentiment-web",
   "version": "1.0.0",
   "description": "A web application for sentiment analysis of Google Maps reviews",
   "main": "app.js",
