@@ -2,18 +2,48 @@
 
 <div class="flex-wrapper">
   <div class="container content">
-    <!-- Warning if Google Maps URL is not configured -->
-    <% if (!googleMapsUrl) { %>
-    <div class="alert alert-warning mt-4 mb-0" role="alert">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      <strong>URL Google Maps belum dikonfigurasi!</strong> Silakan atur URL di halaman ulasan.
+    <!-- Location Information Section -->
+    <div class="row mt-4 mb-3">
+      <div class="col-12">
+        <% if (!googleMapsUrl) { %>
+          <div class="card border-warning shadow-sm">
+            <div class="card-body p-2">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-2">
+                  <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.5rem;"></i>
+                </div>
+                <div class="flex-grow-1 mx-2">
+                  <h6 class="mb-0">URL Google Maps belum dikonfigurasi</h6>
+                </div>
+                <div class="flex-shrink-0">
+                  <a href="/reviews" class="btn btn-sm btn-outline-warning">Konfigurasi</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } else if (placeName) { %>
+          <div class="card border-primary shadow-sm">
+            <div class="card-body p-2">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-2">
+                  <div class="bg-primary bg-opacity-10 rounded-circle p-1">
+                    <i class="bi bi-geo-alt-fill text-primary" style="font-size: 1.25rem;"></i>
+                  </div>
+                </div>
+                <div class="flex-grow-1 mx-2">
+                  <h6 class="mb-0">Lokasi: <span class="text-primary"><%= placeName %></span></h6>
+                </div>
+                <div class="flex-shrink-0">
+                  <a href="/reviews" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
     </div>
-    <% } else if (placeName) { %>
-    <div class="alert alert-info mt-4 mb-0" role="alert">
-      <i class="bi bi-geo-alt-fill me-2"></i>
-      <strong>Lokasi:</strong> <%= placeName %>
-    </div>
-    <% } %>
   
     <!-- Sentiment Cards Row -->
     <div class="row justify-content-center mt-4">
