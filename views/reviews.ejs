@@ -109,11 +109,90 @@
     </div>
   </div>
 
+  <!-- Loading Modal for file analysis (only for processing state) -->
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <div id="loadingState">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+              <span class="visually-hidden">Memuat...</span>
+            </div>
+            <h5 class="mt-3">Memproses file Anda...</h5>
+            <p>Harap tunggu selagi kami menganalisis ulasan.</p>
+            <div class="progress mt-3" style="height: 6px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+            </div>
+          </div>
+          <div id="errorState" class="d-none">
+            <div class="alert alert-danger" id="errorAlert" role="alert"></div>
+            <button class="btn btn-primary mt-3" id="closeModalButton" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Analyzer modal -->
+  <div class="modal fade" id="fileAnalyzerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Analisis Sentimen File Eksternal</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+        </div>
+        <div class="modal-body" id="fileAnalyzerModalBody">
+          <form id="uploadForm" enctype="multipart/form-data">
+            <!-- Error alert container -->
+            <div id="fileAnalyzerAlert" class="d-none mb-3"></div>
+            
+            <div class="mb-3">
+              <h6>Instruksi Analisis File</h6>
+              <p>Fitur ini memungkinkan Anda untuk menganalisis sentimen dari ulasan yang disimpan dalam file eksternal (berbeda dari ulasan Google Maps).</p>
+              <div class="alert alert-info py-2">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <small>Format yang didukung: CSV (.csv), Excel (.xlsx)</small>
+                </div>
+              </div>
+              <div class="alert alert-warning py-2">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  <small><strong>Perhatian:</strong> File yang dianalisis tidak akan tersimpan di database. Hasil analisis akan tersedia untuk diunduh.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="fileInput" class="form-label">Pilih File Ulasan <span class="text-danger">*</span></label>
+              <input class="form-control" type="file" id="fileInput" name="file" accept=".csv,.xlsx" required>
+              <div class="invalid-feedback">
+                Silakan pilih file terlebih dahulu
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" id="uploadButton" class="btn btn-primary">
+            <i class="bi bi-cloud-arrow-up me-1"></i>
+            <span class="spinner-border spinner-border-sm d-none me-2" id="uploadSpinner"></span>
+            Unggah dan Pratinjau
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="container content">
     <div class="mt-4 mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="fw-bold mb-0"></h2>
         <div class="d-flex gap-2">
+          <button id="fileAnalyzerButton" class="btn btn-outline-info d-flex align-items-center">
+            <i class="bi bi-file-earmark-text me-2"></i>
+            <span>Analisis File Eksternal</span>
+          </button>
           <button id="googleMapsButton" class="btn btn-outline-secondary d-flex align-items-center">
             <i class="bi bi-geo-alt me-2"></i>
             <span>Pengaturan Google Maps</span>
@@ -307,6 +386,9 @@
 
     // Set up Google Maps URL settings button
     setupGoogleMapsSettings();
+
+    // Set up file analyzer button and functionality
+    setupFileAnalyzer();
 
     // Configure Google Maps button in warning alert
     const configureBtn = document.getElementById('configureGoogleMapsBtn');
@@ -874,15 +956,367 @@
     }
   }
   
-  function showModalError(message) {
-    const existingAlert = document.querySelector('#googleMapsForm .alert-danger');
+  function showModalError(message, type = 'danger') {
+    const modalBody = document.querySelector('#googleMapsForm .modal-body');
+    const existingAlert = modalBody.querySelector('.alert');
     if (existingAlert) {
       existingAlert.remove();
     }
     
     const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-danger mt-3';
+    alertDiv.className = `alert alert-${type} mt-3`;
     alertDiv.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${message}`;
-    document.getElementById('googleMapsForm').prepend(alertDiv);
+    modalBody.prepend(alertDiv);
+  }
+
+  // File Analyzer Functions
+  function setupFileAnalyzer() {
+    // Initialize modals
+    window.fileAnalyzerModal = new bootstrap.Modal(document.getElementById('fileAnalyzerModal'));
+    window.loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
+    // Setup file analyzer button
+    document.getElementById('fileAnalyzerButton').addEventListener('click', function() {
+      window.fileAnalyzerModal.show();
+    });
+    
+    // Setup upload button click handler
+    document.getElementById('uploadButton').addEventListener('click', handleFileUpload);
+    
+    // Add validation for file input
+    const fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', function() {
+      validateFileInput(this);
+    });
+    
+    // Reset validation when modal is hidden
+    document.getElementById('fileAnalyzerModal').addEventListener('hidden.bs.modal', function() {
+      const fileInput = document.getElementById('fileInput');
+      fileInput.classList.remove('is-invalid', 'is-valid');
+      fileInput.value = '';
+    });
+  }
+  
+  function validateFileInput(input) {
+    // Clear previous validation state
+    input.classList.remove('is-invalid', 'is-valid');
+    
+    // Check if file is selected
+    if (input.files.length === 0) {
+      input.classList.add('is-invalid');
+      return false;
+    }
+    
+    // Validate file type
+    const file = input.files[0];
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.csv', '.xlsx'];
+    const isValidType = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isValidType) {
+      input.classList.add('is-invalid');
+      return false;
+    }
+    
+    // Valid file
+    input.classList.add('is-valid');
+    return true;
+  }
+
+  async function handleFileUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadButton = document.getElementById('uploadButton');
+    const spinner = document.getElementById('uploadSpinner');
+    const alertContainer = document.getElementById('fileAnalyzerAlert');
+    
+    // Clear any previous alerts
+    alertContainer.innerHTML = '';
+    alertContainer.classList.add('d-none');
+    
+    // Validate file input
+    if (!validateFileInput(fileInput)) {
+      return;
+    }
+
+    // Prepare UI for upload
+    uploadButton.disabled = true;
+    spinner.classList.remove('d-none');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      const res = await fetch('/reviews/analyze/upload', { 
+        method: 'POST', 
+        body: formData 
+      });
+      
+      const result = await res.json();
+      
+      if (!res.ok) throw new Error(result.error || 'Unggah gagal');
+      
+      window.fileData = {
+        fileId: result.fileId,
+        fileInput: fileInput
+      };
+      
+      showDataPreview(result);
+      
+    } catch (err) {
+      // Show error in the modal
+      alertContainer.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show">
+          ${err.message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+        </div>`;
+      alertContainer.classList.remove('d-none');
+    } finally {
+      uploadButton.disabled = false;
+      spinner.classList.add('d-none');
+    }
+  }
+
+  function showDataPreview(result) {
+    const modalBody = document.getElementById('fileAnalyzerModalBody');
+    modalBody.innerHTML = `
+      <div class="mb-4 bg-light p-3 rounded border">
+        <div class="row g-3">
+          <div class="col-md-7">
+            <h6 class="mb-1">Pilih Kolom Teks</h6>
+            <p class="small text-muted mb-2">Pilih kolom mana yang berisi teks ulasan untuk dianalisis</p>
+            <select id="columnSelect" class="form-select">
+              <option value="" disabled selected>Pilih kolom...</option>
+              ${result.columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <h6 class="card-title border-bottom pb-2">Informasi File</h6>
+                <p class="small mb-1"><strong>File:</strong> ${result.originalFilename || 'Tidak diketahui'}</p>
+                <p class="small mb-1"><strong>Kolom:</strong> ${result.columns.length}</p>
+                <p class="small mb-1"><strong>Baris:</strong> ${result.totalRows}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-responsive border rounded" style="max-height: min(400px, 50vh);">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light sticky-top">
+            <tr>${result.columns.map(col => `<th class="px-2">${col}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${result.preview.map(row => `
+              <tr>
+                ${result.columns.map(col => `<td class="px-2">${truncateText(row[col] || '')}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    // Update modal footer buttons
+    const modalFooter = document.querySelector('#fileAnalyzerModal .modal-footer');
+    modalFooter.innerHTML = `
+      <button type="button" id="backButton" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Kembali
+      </button>
+      <button id="processButton" class="btn btn-success" disabled>
+        <i class="bi bi-lightning-charge me-1"></i>
+        <span class="spinner-border spinner-border-sm d-none me-2" id="processSpinner"></span>
+        Analisis Kolom Terpilih
+      </button>`;
+
+    // Set up back button handler
+    document.getElementById('backButton').addEventListener('click', function() {
+      window.fileAnalyzerModal.hide();
+      // Reset the modal content when hiding it
+      setTimeout(() => {
+        document.getElementById('fileAnalyzerModalBody').innerHTML = `
+          <form id="uploadForm" enctype="multipart/form-data">
+            <div class="mb-3">
+              <h6>Instruksi</h6>
+              <p>Unggah file data ulasan Anda untuk analisis sentimen. Pastikan file berisi kolom dengan teks ulasan.</p>
+              <div class="alert alert-info py-2">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <small>Format yang didukung: CSV (.csv), Excel (.xlsx)</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="fileInput" class="form-label">Pilih File</label>
+              <input class="form-control" type="file" id="fileInput" name="file" accept=".csv,.xlsx">
+            </div>
+          </form>`;
+        
+        document.querySelector('#fileAnalyzerModal .modal-footer').innerHTML = `
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" id="uploadButton" class="btn btn-primary">
+            <i class="bi bi-cloud-arrow-up me-1"></i>
+            <span class="spinner-border spinner-border-sm d-none me-2" id="uploadSpinner"></span>
+            Unggah dan Pratinjau
+          </button>`;
+        
+        // Re-attach event listener
+        document.getElementById('uploadButton').addEventListener('click', handleFileUpload);
+      }, 300);
+    });
+
+    // Set up column selection handler
+    document.getElementById('columnSelect').addEventListener('change', function() {
+      document.getElementById('processButton').disabled = !this.value;
+    });
+
+    // Set up process button
+    document.getElementById('processButton').addEventListener('click', processSelectedColumn);
+    
+    // Store the file ID and original filename
+    window.fileData = {
+      fileId: result.fileId,
+      originalFilename: result.originalFilename
+    };
+  }
+
+  async function processSelectedColumn() {
+    const button = document.getElementById('processButton');
+    const spinner = document.getElementById('processSpinner');
+    const selectedCol = document.getElementById('columnSelect').value;
+    
+    if (!selectedCol || !window.fileData) {
+      showAlert('Silakan pilih kolom terlebih dahulu', 'warning');
+      return;
+    }
+
+    // Show loading modal
+    document.getElementById('loadingState').classList.remove('d-none');
+    document.getElementById('errorState').classList.add('d-none');
+    window.fileAnalyzerModal.hide();
+    window.loadingModal.show();
+
+    button.disabled = true;
+    spinner.classList.remove('d-none');
+
+    try {
+      const res = await fetch('/reviews/analyze/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileId: window.fileData.fileId,
+          column: selectedCol
+        })
+      });
+
+      const result = await res.json();
+      
+      if (!res.ok) throw new Error(result.error || 'Analisis gagal');
+
+      // Hide loading modal
+      window.loadingModal.hide();
+      
+      // Show results in a new modal
+      showAnalysisResults(result);
+    } catch (err) {
+      document.getElementById('loadingState').classList.add('d-none');
+      document.getElementById('errorState').classList.remove('d-none');
+      document.getElementById('errorAlert').textContent = err.message;
+    } finally {
+      button.disabled = false;
+      spinner.classList.add('d-none');
+    }
+  }
+
+  function showAnalysisResults(result) {
+    // Create a results modal on-the-fly
+    const modalId = 'resultsModal';
+    let modal = document.getElementById(modalId);
+    
+    // Create modal if it doesn't exist
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.className = 'modal fade';
+      modal.id = modalId;
+      modal.tabIndex = '-1';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Hasil Analisis</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body text-center">
+              <div class="alert alert-success">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span class="fw-bold">Analisis Selesai!</span>
+              </div>
+              
+              <div class="py-3">
+                <div class="mb-3 d-inline-block p-3 bg-success bg-opacity-10 rounded-circle">
+                  <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                </div>
+                <h5 class="mb-3">File Anda telah diproses</h5>
+                <p class="text-muted">Analisis sentimen selesai dan siap diunduh</p>
+              </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+              <button id="downloadResults" class="btn btn-primary px-4">
+                <i class="bi bi-download me-2"></i>Unduh Hasil
+              </button>
+              <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                <i class="bi bi-x me-2"></i>Tutup
+              </button>
+            </div>
+          </div>
+        </div>`;
+      
+      document.body.appendChild(modal);
+    }
+    
+    // Initialize bootstrap modal
+    const resultModalInstance = new bootstrap.Modal(modal);
+    resultModalInstance.show();
+    
+    // Set up download button
+    document.getElementById('downloadResults').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = `data:application/octet-stream;base64,${result.file}`;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+    
+    // Remove the modal when it's hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+      // Clear out the file data
+      window.fileData = null;
+    });
+  }
+
+  // Helper functions
+  function truncateText(text, maxLength = 100) {
+    if (typeof text !== 'string') return text;
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
+
+  function showAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+    `;
+    
+    const container = document.querySelector('.container.content');
+    container.prepend(alert);
+    
+    setTimeout(() => {
+      alert.classList.remove('show');
+      setTimeout(() => alert.remove(), 150);
+    }, 5000);
   }
 </script>

@@ -7,7 +7,6 @@ import session from 'express-session';
 import SequelizeStore from 'connect-session-sequelize';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
-import analyzeRoutes from './routes/analyzeRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { startSentimentAnalysisJob } from './services/sentimentService.js';
 import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
@@ -74,7 +73,7 @@ app.use('/icons', express.static(path.join(__dirname, 'node_modules/bootstrap-ic
 app.use('/', authRoutes);
 
 // Protected routes
-app.use('/', isAuthenticated, dashboardRoutes, reviewRoutes, analyzeRoutes);
+app.use('/', isAuthenticated, dashboardRoutes, reviewRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

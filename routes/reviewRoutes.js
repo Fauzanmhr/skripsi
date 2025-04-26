@@ -6,8 +6,11 @@ import {
   getAutoScrapeSettings,
   updateAutoScrapeSettings,
   getLatestScrapeStatus,
-  handleUpdateGoogleMapsUrl // Add new controller function
+  handleUpdateGoogleMapsUrl,
+  handleFileUpload,
+  processFileAnalysis
 } from '../controllers/reviewController.js';
+import upload from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -29,5 +32,9 @@ router.get('/reviews/latest-status', getLatestScrapeStatus);
 
 // Google Maps URL settings
 router.post('/reviews/google-maps-url', handleUpdateGoogleMapsUrl);
+
+// File analyzer routes
+router.post('/reviews/analyze/upload', upload.single('file'), handleFileUpload);
+router.post('/reviews/analyze/process', processFileAnalysis);
 
 export default router;
