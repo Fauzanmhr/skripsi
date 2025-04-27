@@ -628,8 +628,8 @@
                content += `<span>(${statusData.message})</span>`;
            }
        } else if (statusData.status === 'failed') {
-           const errorDetail = statusData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
-           content += `<span class="text-danger">(Error: ${errorDetail})</span>`;
+           // Display the raw error message without any manipulation
+           content += `<span class="text-danger">(${statusData.message})</span>`;
        }
     }
 
