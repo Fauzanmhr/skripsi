@@ -1,46 +1,56 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- Left spacer that takes up same width as user dropdown -->
-            <div class="d-none d-lg-block me-auto" style="width: 120px;"></div>
-            
-            <!-- Center navigation -->
-            <ul class="navbar-nav mx-auto">
-                <li class="nav-item">
-                    <a class="nav-link <%= page === 'dashboard' ? 'active' : '' %>" href="/">Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <%= page === 'reviews' ? 'active' : '' %>" href="/reviews">Ulasan</a>
-                </li>
-            </ul>
-            
-            <!-- User dropdown on the right -->
-            <div class="d-flex ms-auto">
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-1"></i>
-                        <% if (locals.isAuthenticated && locals.user) { %>
-                            <%= locals.user.username %>
-                        <% } else { %>
-                            User
-                        <% } %>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <% if (locals.isAuthenticated) { %>
-                            <li><a class="dropdown-item" href="/change-password"><i class="bi bi-key me-2"></i>Change Password</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-                        <% } else { %>
-                            <li><a class="dropdown-item" href="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Login</a></li>
-                        <% } %>
-                    </ul>
-                </div>
-            </div>
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+  <div class="container">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <div class="me-auto"></div>
+
+
+      <ul class="navbar-nav">
+        <li class="nav-item mx-3">
+          <a class="nav-link <%= page === 'dashboard' ? 'active fw-medium text-primary border-bottom border-primary pb-2' : '' %>"
+            href="/">
+            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item mx-3">
+          <a class="nav-link <%= page === 'reviews' ? 'active fw-medium text-primary border-bottom border-primary pb-2' : '' %>"
+            href="/reviews">
+            <i class="bi bi-chat-square-text me-1"></i> Ulasan
+          </a>
+        </li>
+      </ul>
+
+      <div class="ms-auto">
+        <div class="dropdown">
+          <button class="btn btn-light border shadow-sm dropdown-toggle" type="button" id="userDropdown"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle text-primary me-1"></i>
+            <% if (locals.isAuthenticated && locals.user) { %>
+              <%= locals.user.username %>
+                <% } else { %>
+                  User
+                  <% } %>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+            <% if (locals.isAuthenticated) { %>
+              <li><a class="dropdown-item" href="/change-password"><i class="bi bi-key me-2 text-secondary"></i>Change
+                  Password</a></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li><a class="dropdown-item text-danger" href="/logout"><i
+                    class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+              <% } else { %>
+                <li><a class="dropdown-item" href="/login"><i
+                      class="bi bi-box-arrow-in-right me-2 text-secondary"></i>Login</a></li>
+                <% } %>
+          </ul>
         </div>
+      </div>
     </div>
+  </div>
 </nav>
