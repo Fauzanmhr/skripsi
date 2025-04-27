@@ -1,6 +1,6 @@
 import { scraper } from "google-maps-review-scraper";
 import Review from '../models/review.js';
-import GoogleMapsUrl from '../models/googleMapsUrl.js';
+import GoogleMapsSetting from '../models/googleMapsSetting.js';
 
 // Clean review text by removing extra spaces and trimming
 const cleanText = (text) => text.replace(/\s+/g, ' ').trim();
@@ -20,9 +20,9 @@ export function extractPlaceName(url) {
   }
 }
 
-export async function getGoogleMapsUrl() {
+export async function getGoogleMapsSetting() {
   try {
-    const [record] = await GoogleMapsUrl.findOrCreate({
+    const [record] = await GoogleMapsSetting.findOrCreate({
       where: { id: 1 },
       defaults: { url: '' }
     });
@@ -33,9 +33,9 @@ export async function getGoogleMapsUrl() {
   }
 }
 
-export async function updateGoogleMapsUrl(url) {
+export async function updateGoogleMapsSetting(url) {
   try {
-    const [record] = await GoogleMapsUrl.findOrCreate({
+    const [record] = await GoogleMapsSetting.findOrCreate({
       where: { id: 1 },
       defaults: { url }
     });
@@ -51,9 +51,9 @@ export async function updateGoogleMapsUrl(url) {
   }
 }
 
-export async function initializeGoogleMapsUrl() {
+export async function initializeGoogleMapsSetting() {
   try {
-    const [record] = await GoogleMapsUrl.findOrCreate({
+    const [record] = await GoogleMapsSetting.findOrCreate({
       where: { id: 1 },
       defaults: { url: '' }
     });
@@ -67,7 +67,7 @@ export async function initializeGoogleMapsUrl() {
 export async function fetchReviews() {
   try {
     // Get Google Maps URL from database
-    const googleMapsURL = await getGoogleMapsUrl();
+    const googleMapsURL = await getGoogleMapsSetting();
 
     if (!googleMapsURL) {
       throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
@@ -143,7 +143,7 @@ export async function saveReviewsToDatabase(reviews) {
 export async function crawlAndSaveReviews() {
   try {
     // Check if Google Maps URL is configured
-    const googleMapsURL = await getGoogleMapsUrl();
+    const googleMapsURL = await getGoogleMapsSetting();
     if (!googleMapsURL) {
       throw new Error('Google Maps URL is not configured. Please set it in the settings.');
     }

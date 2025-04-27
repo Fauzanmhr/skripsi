@@ -1,7 +1,7 @@
 import Review from '../models/review.js';
 import { sequelize } from '../config/database.js';
 import { Op } from 'sequelize';
-import { getGoogleMapsUrl, extractPlaceName } from '../services/googleMapsService.js';
+import { getGoogleMapsSetting, extractPlaceName } from '../services/googleMapsService.js'; // Renamed import
 
 // Controller to render the dashboard page
 export async function renderDashboard(req, res) {
@@ -68,7 +68,7 @@ export async function renderDashboard(req, res) {
     ];
     
     // Get Google Maps URL for warning message
-    const googleMapsUrl = await getGoogleMapsUrl();
+    const googleMapsUrl = await getGoogleMapsSetting(); // Renamed function call
     
     // Extract place name from the URL
     const placeName = extractPlaceName(googleMapsUrl);
@@ -88,7 +88,7 @@ export async function renderDashboard(req, res) {
         years
       },
       page: 'dashboard',
-      googleMapsUrl: googleMapsUrl, // Add Google Maps URL
+      googleMapsUrl: googleMapsUrl, // Keep variable name
       placeName: placeName // Add place name
     });
   } catch (error) {

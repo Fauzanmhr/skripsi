@@ -1,5 +1,5 @@
 import Review from '../models/review.js';
-import { crawlAndSaveReviews, getGoogleMapsUrl, updateGoogleMapsUrl, extractPlaceName } from '../services/googleMapsService.js';
+import { crawlAndSaveReviews, getGoogleMapsSetting, updateGoogleMapsSetting, extractPlaceName } from '../services/googleMapsService.js';
 import { Op } from 'sequelize';
 import { getSettings, saveSettings } from '../services/autoScrapeService.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
@@ -146,7 +146,7 @@ export async function renderReviewsPage(req, res) {
     });
 
     // Get Google Maps URL for settings modal
-    const googleMapsUrl = await getGoogleMapsUrl(); // Function now comes from googleMapsService
+    const googleMapsUrl = await getGoogleMapsSetting(); // Renamed function call
     
     // Extract place name from the URL
     const placeName = extractPlaceName(googleMapsUrl);
@@ -172,7 +172,7 @@ export async function renderReviewsPage(req, res) {
       page: 'reviews',
       getPageUrl: (page) => getPageUrl(req, page),
       latestScrapeStatus: latestScrapeStatus ? latestScrapeStatus.toJSON() : null,
-      googleMapsUrl: googleMapsUrl, // Add Google Maps URL
+      googleMapsUrl: googleMapsUrl, // Keep variable name as it holds the URL string
       placeName: placeName // Add place name
     });
   } catch (error) {
@@ -430,7 +430,7 @@ export async function handleUpdateGoogleMapsUrl(req, res) {
     }
     
     // Get current URL to check if it's changing
-    const currentUrl = await getGoogleMapsUrl(); // Function now comes from googleMapsService
+    const currentUrl = await getGoogleMapsSetting(); // Renamed function call
     const isUrlChanging = currentUrl && currentUrl !== google_maps_url;
     
     // If URL is changing, delete all existing reviews
@@ -455,7 +455,7 @@ export async function handleUpdateGoogleMapsUrl(req, res) {
     }
     
     // Update setting
-    await updateGoogleMapsUrl(google_maps_url); // Function now comes from googleMapsService
+    await updateGoogleMapsSetting(google_maps_url); // Renamed function call
     
     await transaction.commit();
     

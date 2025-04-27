@@ -13,7 +13,7 @@ import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/au
 import { sequelize } from './config/database.js';
 import { isAuthenticated, setLocals } from './middlewares/authMiddleware.js';
 import { createInitialUser } from './controllers/authController.js';
-import { initializeGoogleMapsUrl } from './services/googleMapsService.js';
+import { initializeGoogleMapsSetting } from './services/googleMapsService.js'; // Renamed import
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -113,7 +113,7 @@ async function startServer() {
     initAutoScrapeService();
 
     // Initialize Google Maps URL
-    await initializeGoogleMapsUrl();
+    await initializeGoogleMapsSetting(); // Renamed function call
 
     // Start the server
     app.listen(PORT, () => {

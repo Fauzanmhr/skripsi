@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { crawlAndSaveReviews, getGoogleMapsUrl } from './googleMapsService.js';
+import { crawlAndSaveReviews, getGoogleMapsSetting } from './googleMapsService.js'; // Renamed import
 import AutoScrapeSetting from '../models/autoScrapeSetting.js';
 import ScrapeStatus from '../models/scrapeStatus.js';
 
@@ -138,7 +138,7 @@ function scheduleAutoScrape() {
       });
 
       // Check if Google Maps URL is configured
-      const googleMapsURL = await getGoogleMapsUrl();
+      const googleMapsURL = await getGoogleMapsSetting(); // Renamed function call
       if (!googleMapsURL) {
         throw new Error('URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.');
       }
