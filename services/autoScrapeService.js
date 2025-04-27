@@ -193,7 +193,7 @@ function scheduleAutoScrape() {
 export async function resetStaleScrapesOnStartup() {
   try {
     const interruptedCount = await ScrapeStatus.update(
-      { status: 'failed', message: 'Scrape interrupted due to server restart.', endTime: new Date() },
+      { status: 'failed', message: 'ERROR: Masalah pada server', endTime: new Date() },
       { where: { status: 'running' } }
     );
   } catch (error) {
