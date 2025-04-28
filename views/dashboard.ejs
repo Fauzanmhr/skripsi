@@ -88,28 +88,36 @@
 
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-            <h5 class="card-title mb-0">Distribusi Sentimen Periode</h5>
-            <div class="filter-controls d-flex gap-2">
-              <form id="filterForm" class="d-flex gap-2" method="get">
-                <select name="month" id="monthFilter" class="form-select form-select-sm" onchange="this.form.submit()">
-                  <% filters.months.forEach(month => { %>
-                  <option value="<%= month.value %>" <%= month.value === filters.selectedMonth ? 'selected' : '' %>><%= month.name %></option>
-                  <% }); %>
-                </select>
-                <select name="year" id="yearFilter" class="form-select form-select-sm" onchange="this.form.submit()">
-                  <% filters.years.forEach(year => { %>
-                  <option value="<%= year %>" <%= year === filters.selectedYear ? 'selected' : '' %>><%= year %></option>
-                  <% }); %>
-                </select>
-              </form>
-            </div>
+        <div class="card shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap bg-white">
+            <h5 class="card-title mb-0">
+              <i class="bi bi-exclamation-diamond-fill me-2 text-danger"></i>
+              Ulasan Buruk Terbaru
+            </h5>
           </div>
-          <div class="card-body text-center">
-            <div class="chart-container" style="position: relative; width: 100%; height: 300px;">
-              <canvas id="filteredSentimentChart"></canvas>
-            </div>
+          <div class="card-body p-0">
+            <% if (latestBadReviews && latestBadReviews.length > 0) { %>
+              <div class="list-group list-group-flush">
+                <% latestBadReviews.forEach((review, index) => { %>
+                  <div class="list-group-item <%= index % 2 === 0 ? 'bg-light bg-opacity-50' : '' %>">
+                    <div class="d-flex w-100 justify-content-between">
+                      <h6 class="mb-1">
+                        <span class="badge rounded-pill" style="background-color: <%= review.sentiment === 'negatif' ? '#B71C1C' : '#E65100' %>;">
+                          <%= review.sentiment %>
+                        </span>
+                      </h6>
+                      <small class="text-muted"><%= new Date(review.time_published).toLocaleDateString('id-ID') %></small>
+                    </div>
+                    <p class="mb-1 text-wrap"><%= review.review %></p>
+                  </div>
+                <% }); %>
+              </div>
+            <% } else { %>
+              <div class="alert alert-info m-3">
+                <i class="bi bi-info-circle me-2"></i>
+                Tidak ada ulasan buruk terbaru.
+              </div>
+            <% } %>
           </div>
         </div>
       </div>
@@ -124,29 +132,22 @@
   const Dashboard = {
     config: {
       stats: <%- JSON.stringify(stats) %>,
-      filters: <%- JSON.stringify(filters) %>,
       colors: {
         'positif': 'rgba(46, 125, 50, 0.8)',
         'negatif': 'rgba(183, 28, 28, 0.8)',
         'netral': 'rgba(66, 66, 66, 0.8)',
         'puas': 'rgba(13, 71, 161, 0.8)',
         'kecewa': 'rgba(230, 81, 0, 0.8)'
-      },
-      monthNames: [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-      ]
+      }
     },
 
     init: function() {
       const labels = this.config.stats.labels;
       const allTimeData = labels.map(label => this.config.stats.allTimeCounts[label]);
-      const filteredData = labels.map(label => this.config.stats.counts[label]);
 
       this.setupUIElements();
       this.updateSentimentCards(labels, allTimeData);
       this.createAllTimeChart(labels, allTimeData);
-      this.createFilteredChart(labels, filteredData);
     },
 
     setupUIElements: function() {
@@ -163,10 +164,6 @@
           progressBar.style.backgroundColor = this.config.colors[sentiment];
         }
       });
-    },
-
-    getMonthName: function(monthNum) {
-      return this.config.monthNames[monthNum - 1];
     },
 
     updateSentimentCards: function(labels, data) {
@@ -190,22 +187,8 @@
       this.createSentimentChart(labels, data, 'sentimentChart', 'Semua Waktu', 'bar');
     },
 
-    createFilteredChart: function(labels, data) {
-      const periodLabel = `${this.getMonthName(this.config.filters.selectedMonth)} ${this.config.filters.selectedYear}`;
-      this.createSentimentChart(labels, data, 'filteredSentimentChart', periodLabel, 'pie');
-    },
-
     handleChartClick: function(chartId, sentiment) {
-      if (chartId === 'filteredSentimentChart') {
-        const { selectedYear, selectedMonth } = this.config.filters;
-        const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-        const lastDayDate = new Date(selectedYear, selectedMonth, 0);
-        const lastDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
-
-        window.location.href = `/reviews?sentiment=${sentiment}&startDate=${firstDay}&endDate=${lastDay}`;
-      } else {
-        window.location.href = `/reviews?sentiment=${sentiment}`;
-      }
+      window.location.href = `/reviews?sentiment=${sentiment}`;
     },
 
     createSentimentChart: function(labels, data, chartId, periodLabel, chartType) {
@@ -262,7 +245,6 @@
           },
           plugins: {
             title: {
-              // Always display the title
               display: true,
               text: `Analisis Sentimen ${periodLabel}`,
               font: {
@@ -284,13 +266,7 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  let total;
-                  if (chartType === 'pie') {
-                    total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
-                  } else {
-                    total = data.reduce((sum, val) => sum + val, 0);
-                  }
-
+                  const total = data.reduce((sum, val) => sum + val, 0);
                   const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
                   return `${context.raw} ulasan (${percentage}%)`;
                 },
@@ -303,8 +279,7 @@
           scales: chartType === 'bar' ? {
             y: {
               beginAtZero: true,
-              ticks: { precision: 0
-              }
+              ticks: { precision: 0 }
             }
           } : undefined
         }
