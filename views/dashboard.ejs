@@ -5,43 +5,43 @@
     <div class="row mt-4 mb-3">
       <div class="col-12">
         <% if (!googleMapsUrl) { %>
-          <div class="card border-warning shadow-sm">
-            <div class="card-body p-2">
-              <div class="d-flex align-items-center">
-                <div class="flex-shrink-0 me-2">
-                  <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.5rem;"></i>
-                </div>
-                <div class="flex-grow-1 mx-2">
-                  <h6 class="mb-0">URL Google Maps belum dikonfigurasi</h6>
-                </div>
-                <div class="flex-shrink-0">
-                  <a href="/reviews" class="btn btn-sm btn-outline-warning">Lihat Ulasan</a>
-                </div>
+        <div class="card border-warning shadow-sm">
+          <div class="card-body p-2">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0 me-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.5rem;"></i>
+              </div>
+              <div class="flex-grow-1 mx-2">
+                <h6 class="mb-0">URL Google Maps belum dikonfigurasi</h6>
+              </div>
+              <div class="flex-shrink-0">
+                <a href="/reviews" class="btn btn-sm btn-outline-warning">Lihat Ulasan</a>
               </div>
             </div>
           </div>
+        </div>
         <% } else if (placeName) { %>
-          <div class="card border-primary shadow-sm">
-            <div class="card-body p-2">
-              <div class="d-flex align-items-center">
-                <div class="flex-shrink-0 me-2">
-                  <div class="bg-primary bg-opacity-10 rounded-circle p-1">
-                    <i class="bi bi-geo-alt-fill text-primary" style="font-size: 1.25rem;"></i>
-                  </div>
+        <div class="card border-primary shadow-sm">
+          <div class="card-body p-2">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0 me-2">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-1">
+                  <i class="bi bi-geo-alt-fill text-primary" style="font-size: 1.25rem;"></i>
                 </div>
-                <div class="flex-grow-1 mx-2">
-                  <h6 class="mb-0">Lokasi: <span class="text-primary"><%= placeName %></span></h6>
-                </div>
-                <div class="flex-shrink-0">
-                  <a href="/reviews" class="btn btn-sm btn-outline-primary">Lihat Ulasan</a>
-                </div>
+              </div>
+              <div class="flex-grow-1 mx-2">
+                <h6 class="mb-0">Lokasi: <span class="text-primary"><%= placeName %></span></h6>
+              </div>
+              <div class="flex-shrink-0">
+                <a href="/reviews" class="btn btn-sm btn-outline-primary">Lihat Ulasan</a>
               </div>
             </div>
           </div>
+        </div>
         <% } %>
       </div>
     </div>
-  
+
     <div class="row justify-content-center mt-4">
       <div class="col-lg-2 col-md-4 col-6 mb-4">
         <div class="card h-100">
@@ -54,23 +54,23 @@
           </div>
         </div>
       </div>
-      
+
       <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
       <% sentimentCards.forEach(sentiment => { %>
-        <div class="col-lg-2 col-md-4 col-6 mb-4">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <h6 class="card-subtitle mb-2 text-muted"><%= sentiment.charAt(0).toUpperCase() + sentiment.slice(1) %></h6>
-              <h3 class="card-title" id="<%= sentiment %>Count">0</h3>
-              <div class="progress mt-2" style="height: 4px;">
-                <div class="progress-bar" id="<%= sentiment %>Progress" style="width: 0%"></div>
-              </div>
+      <div class="col-lg-2 col-md-4 col-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h6 class="card-subtitle mb-2 text-muted"><%= sentiment.charAt(0).toUpperCase() + sentiment.slice(1) %></h6>
+            <h3 class="card-title" id="<%= sentiment %>Count">0</h3>
+            <div class="progress mt-2" style="height: 4px;">
+              <div class="progress-bar" id="<%= sentiment %>Progress" style="width: 0%"></div>
             </div>
           </div>
         </div>
+      </div>
       <% }); %>
     </div>
-    
+
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
@@ -85,7 +85,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
@@ -95,12 +95,12 @@
               <form id="filterForm" class="d-flex gap-2" method="get">
                 <select name="month" id="monthFilter" class="form-select form-select-sm" onchange="this.form.submit()">
                   <% filters.months.forEach(month => { %>
-                    <option value="<%= month.value %>" <%= month.value === filters.selectedMonth ? 'selected' : '' %>><%= month.name %></option>
+                  <option value="<%= month.value %>" <%= month.value === filters.selectedMonth ? 'selected' : '' %>><%= month.name %></option>
                   <% }); %>
                 </select>
                 <select name="year" id="yearFilter" class="form-select form-select-sm" onchange="this.form.submit()">
                   <% filters.years.forEach(year => { %>
-                    <option value="<%= year %>" <%= year === filters.selectedYear ? 'selected' : '' %>><%= year %></option>
+                  <option value="<%= year %>" <%= year === filters.selectedYear ? 'selected' : '' %>><%= year %></option>
                   <% }); %>
                 </select>
               </form>
@@ -137,25 +137,25 @@
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
       ]
     },
-    
+
     init: function() {
       const labels = this.config.stats.labels;
       const allTimeData = labels.map(label => this.config.stats.allTimeCounts[label]);
       const filteredData = labels.map(label => this.config.stats.counts[label]);
-      
+
       this.setupUIElements();
       this.updateSentimentCards(labels, allTimeData);
       this.createAllTimeChart(labels, allTimeData);
       this.createFilteredChart(labels, filteredData);
     },
-    
+
     setupUIElements: function() {
       this.applyProgressBarColors();
       document.querySelectorAll('canvas').forEach(canvas => {
         canvas.style.cursor = 'pointer';
       });
     },
-    
+
     applyProgressBarColors: function() {
       Object.keys(this.config.colors).forEach(sentiment => {
         const progressBar = document.getElementById(`${sentiment}Progress`);
@@ -164,64 +164,63 @@
         }
       });
     },
-    
+
     getMonthName: function(monthNum) {
       return this.config.monthNames[monthNum - 1];
     },
-    
+
     updateSentimentCards: function(labels, data) {
       const totalReviews = data.reduce((sum, current) => sum + current, 0);
-      
+
       document.getElementById('totalReviews').textContent = totalReviews;
-      
+
       labels.forEach((label, index) => {
         const count = data[index];
         const percentage = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
-        
+
         document.getElementById(`${label}Count`).textContent = count;
-        
+
         const progressBar = document.getElementById(`${label}Progress`);
         progressBar.style.width = `${percentage}%`;
         progressBar.setAttribute('aria-valuenow', percentage);
       });
     },
-    
+
     createAllTimeChart: function(labels, data) {
       this.createSentimentChart(labels, data, 'sentimentChart', 'Semua Waktu', 'bar');
     },
-    
+
     createFilteredChart: function(labels, data) {
       const periodLabel = `${this.getMonthName(this.config.filters.selectedMonth)} ${this.config.filters.selectedYear}`;
       this.createSentimentChart(labels, data, 'filteredSentimentChart', periodLabel, 'pie');
     },
-    
+
     handleChartClick: function(chartId, sentiment) {
       if (chartId === 'filteredSentimentChart') {
         const { selectedYear, selectedMonth } = this.config.filters;
         const firstDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
         const lastDayDate = new Date(selectedYear, selectedMonth, 0);
         const lastDay = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
-        
+
         window.location.href = `/reviews?sentiment=${sentiment}&startDate=${firstDay}&endDate=${lastDay}`;
       } else {
         window.location.href = `/reviews?sentiment=${sentiment}`;
       }
     },
-    
+
     createSentimentChart: function(labels, data, chartId, periodLabel, chartType) {
       const ctx = document.getElementById(chartId).getContext('2d');
       const backgroundColors = labels.map(label => this.config.colors[label]);
       const self = this;
-      
-      const datasets = chartType === 'pie' ? 
-        [{
+
+      const datasets = chartType === 'pie' ? [{
           label: 'Jumlah Ulasan',
           data: data,
           backgroundColor: backgroundColors,
           borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
           borderWidth: 1,
           hoverOffset: 15
-        }] : 
+        }] :
         labels.map((label, index) => ({
           label: label.charAt(0).toUpperCase() + label.slice(1),
           data: [data[index]],
@@ -231,13 +230,12 @@
           barPercentage: 0.7,
           categoryPercentage: 0.9
         }));
-      
+
       new Chart(ctx, {
         type: chartType,
         data: {
-          labels: chartType === 'pie' ? 
-            labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)) : 
-            [''],
+          labels: chartType === 'pie' ?
+            labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)) : [''],
           datasets: datasets
         },
         options: {
@@ -250,7 +248,7 @@
           onClick: (event, elements) => {
             if (elements.length > 0) {
               let sentiment;
-              
+
               if (chartType === 'pie') {
                 const index = elements[0].index;
                 sentiment = labels[index];
@@ -258,7 +256,7 @@
                 const datasetIndex = elements[0].datasetIndex;
                 sentiment = labels[datasetIndex];
               }
-              
+
               self.handleChartClick(chartId, sentiment);
             }
           },
@@ -272,7 +270,7 @@
                 weight: 'bold'
               }
             },
-            legend: { 
+            legend: {
               display: true,
               position: 'bottom',
               labels: {
@@ -292,7 +290,7 @@
                   } else {
                     total = data.reduce((sum, val) => sum + val, 0);
                   }
-                  
+
                   const percentage = total > 0 ? Math.round((context.raw / total) * 100) : 0;
                   return `${context.raw} ulasan (${percentage}%)`;
                 },
@@ -305,14 +303,15 @@
           scales: chartType === 'bar' ? {
             y: {
               beginAtZero: true,
-              ticks: { precision: 0 }
+              ticks: { precision: 0
+              }
             }
           } : undefined
         }
       });
     }
   };
-  
+
   document.addEventListener('DOMContentLoaded', function() {
     Dashboard.init();
   });
