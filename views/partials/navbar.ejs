@@ -32,21 +32,21 @@
             <% if (locals.isAuthenticated && locals.user) { %>
               <%= locals.user.username %>
                 <% } else { %>
-                  User
+                  Pengguna
                   <% } %>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
             <% if (locals.isAuthenticated) { %>
-              <li><a class="dropdown-item" href="/change-password"><i class="bi bi-key me-2 text-secondary"></i>Change
-                  Password</a></li>
+              <li><a class="dropdown-item" href="/change-password"><i class="bi bi-key me-2 text-secondary"></i>Ganti
+                  Kata Sandi</a></li>
               <li>
                 <hr class="dropdown-divider">
               </li>
               <li><a class="dropdown-item text-danger" href="/logout"><i
-                    class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    class="bi bi-box-arrow-right me-2"></i>Keluar</a></li>
               <% } else { %>
                 <li><a class="dropdown-item" href="/login"><i
-                      class="bi bi-box-arrow-in-right me-2 text-secondary"></i>Login</a></li>
+                      class="bi bi-box-arrow-in-right me-2 text-secondary"></i>Masuk</a></li>
                 <% } %>
           </ul>
         </div>
