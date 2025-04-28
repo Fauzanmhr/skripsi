@@ -1,19 +1,22 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import * as dotenv from 'dotenv';
-import morgan from 'morgan';
-import session from 'express-session';
-import SequelizeStore from 'connect-session-sequelize';
-import dashboardRoutes from './routes/dashboardRoutes.js';
-import reviewRoutes from './routes/reviewRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import { startSentimentAnalysisJob } from './services/sentimentService.js';
-import { initAutoScrapeService, resetStaleScrapesOnStartup } from './services/autoScrapeService.js';
-import { sequelize } from './config/database.js';
-import { isAuthenticated, setLocals } from './middlewares/authMiddleware.js';
-import { createInitialUser } from './controllers/authController.js';
-import { initializeGoogleMapsSetting } from './services/googleMapsService.js'; // Renamed import
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import * as dotenv from "dotenv";
+import morgan from "morgan";
+import session from "express-session";
+import SequelizeStore from "connect-session-sequelize";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import { startSentimentAnalysisJob } from "./services/sentimentService.js";
+import {
+  initAutoScrapeService,
+  resetStaleScrapesOnStartup,
+} from "./services/autoScrapeService.js";
+import { sequelize } from "./config/database.js";
+import { isAuthenticated, setLocals } from "./middlewares/authMiddleware.js";
+import { createInitialUser } from "./controllers/authController.js";
+import { initializeGoogleMapsSetting } from "./services/googleMapsService.js"; // Renamed import
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -27,7 +30,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Trust reverse proxy (e.g., Cloudflare, Nginx)
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Setup session store
 const SessionStore = SequelizeStore(session.Store);
@@ -36,59 +39,73 @@ const sessionStore = new SessionStore({
 });
 
 // View engine setup
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Session middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  proxy: true, // Trust reverse proxy (e.g., Cloudflare, Nginx)
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-    secure: process.env.NODE_ENV === 'production'
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    proxy: true, // Trust reverse proxy (e.g., Cloudflare, Nginx)
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      secure: process.env.NODE_ENV === "production",
+    },
+  }),
+);
 
 //  middleware to set user and authentication status in locals
 app.use(setLocals);
 
 // Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 // Bootstrap CSS and JS
-app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
-app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
-app.use('/js', express.static(path.join(__dirname, 'node_modules/chart.js/dist')));
-app.use('/icons', express.static(path.join(__dirname, 'node_modules/bootstrap-icons/font')));
+app.use(
+  "/css",
+  express.static(path.join(__dirname, "node_modules/bootstrap/dist/css")),
+);
+app.use(
+  "/js",
+  express.static(path.join(__dirname, "node_modules/bootstrap/dist/js")),
+);
+app.use(
+  "/js",
+  express.static(path.join(__dirname, "node_modules/chart.js/dist")),
+);
+app.use(
+  "/icons",
+  express.static(path.join(__dirname, "node_modules/bootstrap-icons/font")),
+);
 
 // Auth routes (no authentication required)
-app.use('/', authRoutes);
+app.use("/", authRoutes);
 
 // Protected routes
-app.use('/', isAuthenticated, dashboardRoutes, reviewRoutes);
+app.use("/", isAuthenticated, dashboardRoutes, reviewRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('error/error', {
-    message: 'Something broke!',
-    error: process.env.NODE_ENV === 'development' ? err : {}
+  res.status(500).render("error/error", {
+    message: "Something broke!",
+    error: process.env.NODE_ENV === "development" ? err : {},
   });
 });
 
 // 404 handler for wrong paths
 app.use((req, res) => {
-  res.status(404).render('error/404', {
-    message: 'Page not found',
-    url: req.url
+  res.status(404).render("error/404", {
+    message: "Page not found",
+    url: req.url,
   });
 });
 
@@ -98,7 +115,7 @@ async function startServer() {
     // Sync database models and session store
     await sequelize.sync();
     await sessionStore.sync();
-    console.log('Database synchronized successfully');
+    console.log("Database synchronized successfully");
 
     // Create initial user if not exists
     await createInitialUser();
@@ -120,7 +137,7 @@ async function startServer() {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 }

@@ -2,7 +2,6 @@
 <%- include('partials/navbar') %>
 <div class="flex-wrapper">
   <div class="container content">
-    <!-- Location Information Section -->
     <div class="row mt-4 mb-3">
       <div class="col-12">
         <% if (!googleMapsUrl) { %>
@@ -43,9 +42,7 @@
       </div>
     </div>
   
-    <!-- Sentiment Cards Row -->
     <div class="row justify-content-center mt-4">
-      <!-- Total Data Card -->
       <div class="col-lg-2 col-md-4 col-6 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
@@ -58,7 +55,6 @@
         </div>
       </div>
       
-      <!-- Sentiment Cards -->
       <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
       <% sentimentCards.forEach(sentiment => { %>
         <div class="col-lg-2 col-md-4 col-6 mb-4">
@@ -75,7 +71,6 @@
       <% }); %>
     </div>
     
-    <!-- All Time Chart Row -->
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
@@ -91,7 +86,6 @@
       </div>
     </div>
     
-    <!-- Filtered Chart Row -->
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
@@ -125,7 +119,6 @@
 
 <%- include('./partials/footer') %>
 
-<!-- Scripts -->
 <script src="/js/chart.umd.js"></script>
 <script>
   const Dashboard = {
