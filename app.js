@@ -1,3 +1,4 @@
+// File utama untuk konfigurasi dan inisialisasi aplikasi Express.js
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,59 +17,60 @@ import {
 import { sequelize } from "./config/database.js";
 import { isAuthenticated, setLocals } from "./middlewares/authMiddleware.js";
 import { createInitialUser } from "./controllers/authController.js";
-import { initializeGoogleMapsSetting } from "./services/googleMapsService.js"; // Renamed import
+import { initializeGoogleMapsSetting } from "./services/googleMapsService.js";
 
-// Get __dirname equivalent in ES module
+// Konfigurasi path untuk metode import ES Module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
+// Muat variabel environment dari file .env
 dotenv.config();
 
-// Initialize Express
+// Inisialisasi aplikasi Express
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust reverse proxy (e.g., Cloudflare, Nginx)
+// Konfigurasi trust proxy untuk bekerja di belakang reverse proxy
 app.set("trust proxy", 1);
 
-// Setup session store
+// Konfigurasi penyimpanan sesi menggunakan Sequelize
 const SessionStore = SequelizeStore(session.Store);
 const sessionStore = new SessionStore({
   db: sequelize,
 });
 
-// View engine setup
+// Konfigurasi view engine dan direktori views
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Middleware
+// Middleware untuk parsing body request
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Middleware logging HTTP request
 app.use(morgan("dev"));
 
-// Session middleware
+// Konfigurasi middleware session
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Trust reverse proxy (e.g., Cloudflare, Nginx)
+    proxy: true,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // Sesi bertahan 1 hari
+      secure: process.env.NODE_ENV === "production", // Gunakan HTTPS di production
     },
   }),
 );
 
-//  middleware to set user and authentication status in locals
+// Middleware untuk menyediakan informasi user di semua view
 app.use(setLocals);
 
-// Serve static files
+// Middleware untuk file statis
 app.use(express.static(path.join(__dirname, "public")));
 
-// Bootstrap CSS and JS
+// Setup path untuk file static dari node_modules
 app.use(
   "/css",
   express.static(path.join(__dirname, "node_modules/bootstrap/dist/css")),
@@ -86,22 +88,22 @@ app.use(
   express.static(path.join(__dirname, "node_modules/bootstrap-icons/font")),
 );
 
-// Auth routes (no authentication required)
+// Routing untuk autentikasi (tidak memerlukan login)
 app.use("/", authRoutes);
 
-// Protected routes
+// Routing untuk dashboard dan ulasan (memerlukan login)
 app.use("/", isAuthenticated, dashboardRoutes, reviewRoutes);
 
-// Error handler
+// Middleware error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).render("error/error", {
     message: "Something broke!",
-    error: process.env.NODE_ENV === "development" ? err : {},
+    error: process.env.NODE_ENV === "development" ? err : {}, // Tampilkan error detail hanya di development
   });
 });
 
-// 404 handler for wrong paths
+// Middleware 404 handler
 app.use((req, res) => {
   res.status(404).render("error/404", {
     message: "Page not found",
@@ -109,30 +111,30 @@ app.use((req, res) => {
   });
 });
 
-// Database sync and server start
+// Fungsi untuk menginisialisasi server dan database
 async function startServer() {
   try {
-    // Sync database models and session store
+    // Sinkronisasi model dengan database
     await sequelize.sync();
     await sessionStore.sync();
     console.log("Database synchronized successfully");
 
-    // Create initial user if not exists
+    // Membuat user admin default jika belum ada
     await createInitialUser();
 
-    // Reset any stale 'running' scrape statuses on startup
+    // Reset status scrape yang terganggu saat server restart
     await resetStaleScrapesOnStartup();
 
-    // Start the sentiment analysis background job
+    // Mulai background job untuk analisis sentimen otomatis
     startSentimentAnalysisJob();
 
-    // Initialize auto scrape service
+    // Inisialisasi service scrape otomatis
     initAutoScrapeService();
 
-    // Initialize Google Maps URL
-    await initializeGoogleMapsSetting(); // Renamed function call
+    // Inisialisasi setelan Google Maps
+    await initializeGoogleMapsSetting();
 
-    // Start the server
+    // Mulai server HTTP
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
@@ -142,4 +144,5 @@ async function startServer() {
   }
 }
 
+// Mulai server
 startServer();

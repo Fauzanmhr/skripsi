@@ -2,9 +2,11 @@
 <%- include('partials/navbar') %>
 <div class="flex-wrapper">
   <div class="container content">
+    <!-- Informasi URL Google Maps yang dikonfigurasi -->
     <div class="row mt-4 mb-3">
       <div class="col-12">
         <% if (!googleMapsUrl) { %>
+        <!-- Peringatan jika URL Google Maps belum dikonfigurasi -->
         <div class="card border-warning shadow-sm">
           <div class="card-body p-2">
             <div class="d-flex align-items-center">
@@ -21,6 +23,7 @@
           </div>
         </div>
         <% } else if (placeName) { %>
+        <!-- Informasi lokasi dari URL Google Maps -->
         <div class="card border-primary shadow-sm">
           <div class="card-body p-2">
             <div class="d-flex align-items-center">
@@ -42,7 +45,9 @@
       </div>
     </div>
 
+    <!-- Kartu-kartu statistik sentimen -->
     <div class="row justify-content-center mt-4">
+      <!-- Kartu untuk total ulasan -->
       <div class="col-lg-2 col-md-4 col-6 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
@@ -55,6 +60,7 @@
         </div>
       </div>
 
+      <!-- Kartu untuk masing-masing jenis sentimen -->
       <% const sentimentCards = ['positif', 'negatif', 'netral', 'puas', 'kecewa']; %>
       <% sentimentCards.forEach(sentiment => { %>
       <div class="col-lg-2 col-md-4 col-6 mb-4">
@@ -71,6 +77,7 @@
       <% }); %>
     </div>
 
+    <!-- Chart visualisasi distribusi sentimen -->
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card">
@@ -86,6 +93,7 @@
       </div>
     </div>
 
+    <!-- Daftar ulasan buruk terbaru -->
     <div class="row justify-content-center">
       <div class="col-md-12 mb-4">
         <div class="card shadow-sm">
@@ -97,6 +105,7 @@
           </div>
           <div class="card-body p-0">
             <% if (latestBadReviews && latestBadReviews.length > 0) { %>
+              <!-- Tampilkan ulasan buruk jika ada -->
               <div class="list-group list-group-flush">
                 <% latestBadReviews.forEach((review, index) => { %>
                   <div class="list-group-item <%= index % 2 === 0 ? 'bg-light bg-opacity-50' : '' %>">
@@ -113,6 +122,7 @@
                 <% }); %>
               </div>
             <% } else { %>
+              <!-- Pesan jika tidak ada ulasan buruk -->
               <div class="alert alert-info m-3">
                 <i class="bi bi-info-circle me-2"></i>
                 Tidak ada ulasan buruk terbaru.
@@ -127,9 +137,12 @@
 
 <%- include('./partials/footer') %>
 
+<!-- Script untuk inisialisasi dan manipulasi chart -->
 <script src="/js/chart.umd.js"></script>
 <script>
+  // Objek Dashboard dengan metode dan konfigurasi
   const Dashboard = {
+    // Konfigurasi dashboard termasuk data statistik dan warna sentimen
     config: {
       stats: <%- JSON.stringify(stats) %>,
       colors: {
@@ -141,6 +154,7 @@
       }
     },
 
+    // Inisialisasi dashboard saat page load
     init: function() {
       const labels = this.config.stats.labels;
       const allTimeData = labels.map(label => this.config.stats.allTimeCounts[label]);
@@ -150,6 +164,7 @@
       this.createAllTimeChart(labels, allTimeData);
     },
 
+    // Setup elemen UI pada dashboard
     setupUIElements: function() {
       this.applyProgressBarColors();
       document.querySelectorAll('canvas').forEach(canvas => {
@@ -157,6 +172,7 @@
       });
     },
 
+    // Terapkan warna pada progress bar berdasarkan jenis sentimen
     applyProgressBarColors: function() {
       Object.keys(this.config.colors).forEach(sentiment => {
         const progressBar = document.getElementById(`${sentiment}Progress`);
@@ -166,6 +182,7 @@
       });
     },
 
+    // Update kartu statistik sentimen dengan data dan persentase
     updateSentimentCards: function(labels, data) {
       const totalReviews = data.reduce((sum, current) => sum + current, 0);
 
@@ -183,14 +200,17 @@
       });
     },
 
+    // Buat chart distribusi sentimen untuk semua waktu
     createAllTimeChart: function(labels, data) {
       this.createSentimentChart(labels, data, 'sentimentChart', 'Semua Waktu', 'bar');
     },
 
+    // Handler click pada chart untuk navigasi ke halaman ulasan dengan filter
     handleChartClick: function(chartId, sentiment) {
       window.location.href = `/reviews?sentiment=${sentiment}`;
     },
 
+    // Fungsi untuk membuat chart sentimen dengan konfigurasi tertentu
     createSentimentChart: function(labels, data, chartId, periodLabel, chartType) {
       const ctx = document.getElementById(chartId).getContext('2d');
       const backgroundColors = labels.map(label => this.config.colors[label]);
@@ -287,6 +307,7 @@
     }
   };
 
+  // Inisialisasi dashboard saat DOM telah dimuat
   document.addEventListener('DOMContentLoaded', function() {
     Dashboard.init();
   });
