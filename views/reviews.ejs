@@ -800,13 +800,14 @@
     
         document.getElementById('googleMapsButton').addEventListener('click', function() {
       const googleMapsModal = new bootstrap.Modal(document.getElementById('googleMapsModal'));
+      document.getElementById('google_maps_url').value = "<%= googleMapsUrl %>";
       googleMapsModal.show();
     });
     
         urlInput.addEventListener('input', function() {
       validateGoogleMapsUrl(this);
       
-            saveButton.disabled = this.value.trim() === originalUrl;
+            saveButton.disabled = this.value.trim() === "<%= googleMapsUrl %>";
     });
     
         document.getElementById('saveGoogleMapsUrl').addEventListener('click', async function() {
@@ -874,7 +875,8 @@
         feedback.remove();
       }
       
-            urlInput.value = originalUrl;
+            // Reset to the server value, not the original captured value
+            urlInput.value = "<%= googleMapsUrl %>";
       
             saveButton.disabled = true;
       

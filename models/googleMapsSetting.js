@@ -15,7 +15,7 @@ const GoogleMapsSetting = sequelize.define(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
     tableName: "google_maps_settings",
   },
 );

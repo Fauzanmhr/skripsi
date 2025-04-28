@@ -21,7 +21,7 @@ const AutoScrapeSetting = sequelize.define(
   },
   {
     tableName: "auto_scrape_settings",
-    timestamps: true,
+    timestamps: false,
   },
 );
 

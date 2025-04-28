@@ -528,11 +528,9 @@ export async function processFileAnalysis(req, res) {
 
     const fileData = uploadedFiles.get(fileId);
     if (!fileData) {
-      return res
-        .status(404)
-        .json({
-          error: "File tidak ditemukan atau kedaluwarsa. Silakan unggah lagi.",
-        });
+      return res.status(404).json({
+        error: "File tidak ditemukan atau kedaluwarsa. Silakan unggah lagi.",
+      });
     }
 
     const { rows, originalFilename } = fileData;

@@ -29,7 +29,7 @@ async function processPendingReviews() {
   try {
     const pendingReviews = await Review.findAll({
       where: { sentiment: null },
-      order: [["createdAt", "ASC"]],
+      order: [["time_published", "ASC"]],
     });
 
     if (pendingReviews.length === 0) {
