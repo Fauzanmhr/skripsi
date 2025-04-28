@@ -1,44 +1,35 @@
 <%- include('../partials/header', { title: title, page: page }) %>
-
-<div class="container content mt-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-5 col-md-8">
-      <div class="card shadow-sm">
-        <div class="card-header py-3">
-          <h5 class="mb-0">Masuk</h5>
+<body>
+  <div class="d-flex align-items-center justify-content-center vh-100 bg-light">
+    <main class="form-signin w-100 m-auto p-4 bg-white rounded shadow-sm" style="max-width: 380px;">
+      <form action="/login" method="POST">
+        <div class="text-center mb-4">
+          <img src="/favicon/android-chrome-192x192.png" alt="Logo" width="72" height="72" class="mb-3">
+          <p class="text-muted">Login untuk akses aplikasi</p>
         </div>
-        <div class="card-body p-4">
-          <% if (success) { %>
-          <div class="alert alert-success" role="alert">
-            <%= success %>
-          </div>
-          <% } %>
 
-          <% if (error) { %>
-          <div class="alert alert-danger" role="alert">
-            <%= error %>
-          </div>
-          <% } %>
-
-          <form action="/login" method="POST">
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" name="email" required>
-            </div>
-
-            <div class="mb-3">
-              <label for="password" class="form-label">Kata Sandi</label>
-              <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-
-            <div class="d-grid">
-              <button type="submit" class="btn btn-primary">Masuk</button>
-            </div>
-          </form>
+        <% if (error) { %>
+        <div class="alert alert-danger mb-3" role="alert">
+          <%= error %>
         </div>
-      </div>
-    </div>
+        <% } %>
+
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+          <label for="username">Username</label>
+        </div>
+
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+          <label for="password">Password</label>
+        </div>
+
+        <button class="w-100 btn btn-lg btn-primary" type="submit">Login</button>
+
+        <p class="mt-4 mb-0 text-center text-muted">&copy; <%= new Date().getFullYear() %> De.u Sentiment Analysis</p>
+      </form>
+    </main>
   </div>
-</div>
-
-<%- include('../partials/footer') %>
+  <%- include('../partials/footer') %>
+</body>
+</html>
