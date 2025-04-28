@@ -20,7 +20,6 @@ export async function renderDashboard(req, res) {
       raw: true,
     });
 
-    // Fetch the latest bad reviews (negative or kecewa sentiment)
     const latestBadReviews = await Review.findAll({
       where: {
         sentiment: {
