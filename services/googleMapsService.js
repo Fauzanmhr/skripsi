@@ -127,41 +127,49 @@ export async function saveReviewsToDatabase(reviews) {
     total: reviews.length, // Total ulasan yang diproses
   };
 
-  // Proses setiap ulasan satu per satu
-  for (const reviewData of reviews) {
-    try {
-      // Cek apakah ulasan sudah ada di database berdasarkan ID
-      const existingReview = await Review.findByPk(reviewData.id);
+  try {
+    // Ambil semua review yang sudah ada dari database
+    const existingReviews = await Review.findAll({
+      where: { id: reviews.map((r) => r.id) },
+    });
 
-      if (existingReview) {
-        // Jika ulasan sudah ada, cek apakah kontennya berubah
-        if (existingReview.review !== reviewData.review) {
-          // Update ulasan dan reset sentimen untuk dianalisis ulang
-          await existingReview.update({
-            review: reviewData.review,
-            time_published: reviewData.time_published,
-            sentiment: null,
-          });
-          result.updated++;
-        } else {
-          // Lewati jika tidak ada perubahan
-          result.skipped++;
-        }
-      } else {
-        // Buat ulasan baru jika belum ada
-        await Review.create({
-          ...reviewData,
-          sentiment: null,
-        });
+    // Buat Map dari review ID untuk lookup cepat
+    const existingMap = new Map();
+    existingReviews.forEach((r) => existingMap.set(r.id, r.review));
+
+    // Filter review yang baru atau perlu diupdate
+    const reviewsToUpsert = [];
+    for (const review of reviews) {
+      const existingText = existingMap.get(review.id);
+
+      if (existingText === undefined) {
+        // Review baru
+        reviewsToUpsert.push({ ...review, sentiment: null });
         result.saved++;
+      } else if (existingText !== review.review) {
+        // Review sudah ada tapi berubah
+        reviewsToUpsert.push({ ...review, sentiment: null });
+        result.updated++;
+      } else {
+        // Review tidak berubah
+        result.skipped++;
       }
-    } catch (error) {
-      // Catat error dan lanjutkan ke ulasan berikutnya
-      result.errors++;
     }
-  }
 
-  return result;
+    // Simpan semua review baru dan yang berubah
+    if (reviewsToUpsert.length > 0) {
+      await Review.bulkCreate(reviewsToUpsert, {
+        updateOnDuplicate: ["review", "time_published", "sentiment"],
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in saveReviewsToDatabase:", error);
+    result.errors =
+      result.total - result.saved - result.updated - result.skipped;
+    return result;
+  }
 }
 
 // Fungsi utama yang menggabungkan proses fetch dan save ulasan

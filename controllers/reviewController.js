@@ -217,7 +217,13 @@ export async function handleCrawlRequest(req, res) {
     io.emit("scrapeStatusUpdate", scrapeRecord.toJSON());
 
     // Ambil URL Google Maps dan mulai proses crawling
-    const googleMapsURL = process.env.GOOGLE_MAPS_URL;
+    const googleMapsURL = await getGoogleMapsSetting();
+    if (!googleMapsURL) {
+      throw new Error(
+        "URL Google Maps belum dikonfigurasi. Silakan atur di pengaturan.",
+      );
+    }
+
     const result = await crawlAndSaveReviews(googleMapsURL);
     const endTime = new Date();
     const message = `Crawling selesai. Baru disimpan: ${result.saved}, Diperbarui: ${result.updated}, Tidak berubah: ${result.skipped}, Error: ${result.errors}`;
