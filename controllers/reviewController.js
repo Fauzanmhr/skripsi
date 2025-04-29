@@ -19,6 +19,7 @@ import {
   generateExcel,
   processFileContent,
 } from "../services/analyzeService.js";
+import { io } from "../app.js";
 
 // Menyimpan file yang diunggah sementara dalam memori
 const uploadedFiles = new Map();
@@ -78,7 +79,7 @@ export async function renderReviewsPage(req, res) {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // Mendapatkan parameter filter 
+    // Mendapatkan parameter filter
     const sentimentFilter = req.query.sentiment || "";
     const startDateFilter = req.query.startDate || "";
     const endDateFilter = req.query.endDate || "";
@@ -212,6 +213,9 @@ export async function handleCrawlRequest(req, res) {
       startTime: startTime,
     });
 
+    // Kirim event Socket.io untuk status scrape baru
+    io.emit("scrapeStatusUpdate", scrapeRecord.toJSON());
+
     // Ambil URL Google Maps dan mulai proses crawling
     const googleMapsURL = process.env.GOOGLE_MAPS_URL;
     const result = await crawlAndSaveReviews(googleMapsURL);
@@ -224,6 +228,9 @@ export async function handleCrawlRequest(req, res) {
       endTime: endTime,
       message: message,
     });
+
+    // Kirim event Socket.io untuk status scrape selesai
+    io.emit("scrapeStatusUpdate", scrapeRecord.toJSON());
 
     // Kirim response sukses
     res.json({
@@ -247,6 +254,9 @@ export async function handleCrawlRequest(req, res) {
           message: errorMessage,
         });
         finalStatus = scrapeRecord.toJSON();
+
+        // Kirim event Socket.io untuk status scrape gagal
+        io.emit("scrapeStatusUpdate", finalStatus);
       } catch (updateError) {
         console.error("Failed to update scrape status to failed:", updateError);
         finalStatus = {
@@ -256,6 +266,9 @@ export async function handleCrawlRequest(req, res) {
           endTime: endTime,
           message: errorMessage + " (DB update failed)",
         };
+
+        // Kirim event Socket.io untuk status scrape gagal meskipun update database gagal
+        io.emit("scrapeStatusUpdate", finalStatus);
       }
     } else {
       // Buat record status failed jika record belum dibuat
@@ -268,6 +281,9 @@ export async function handleCrawlRequest(req, res) {
           message: `Failed to even start scrape process: ${error.message}`,
         });
         finalStatus = failedRecord.toJSON();
+
+        // Kirim event Socket.io untuk status scrape gagal
+        io.emit("scrapeStatusUpdate", finalStatus);
       } catch (createError) {
         console.error(
           "Failed to create 'failed' scrape status record:",
@@ -280,6 +296,9 @@ export async function handleCrawlRequest(req, res) {
           endTime: endTime,
           message: errorMessage + " (DB creation failed)",
         };
+
+        // Kirim event Socket.io untuk status scrape gagal meskipun update database gagal
+        io.emit("scrapeStatusUpdate", finalStatus);
       }
     }
 
@@ -432,21 +451,6 @@ export async function updateAutoScrapeSettings(req, res) {
           ? error.message
           : "Internal Server Error",
     });
-  }
-}
-
-// Mendapatkan status scrape terakhir
-export async function getLatestScrapeStatus(req, res) {
-  try {
-    // Ambil status scrape paling baru
-    const latestStatus = await ScrapeStatus.findOne({
-      order: [["id", "DESC"]],
-    });
-    res.json(latestStatus ? latestStatus.toJSON() : null);
-  } catch (error) {
-    // Handling error
-    console.error("Error fetching latest scrape status:", error);
-    res.status(500).json({ message: "Failed to fetch status" });
   }
 }
 

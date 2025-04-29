@@ -177,7 +177,7 @@ export async function crawlAndSaveReviews() {
 
     // Ambil ulasan dari Google Maps
     const reviews = await fetchReviews();
-    
+
     // Simpan ulasan ke database dan kembalikan hasilnya
     return await saveReviewsToDatabase(reviews);
   } catch (error) {

@@ -27,16 +27,16 @@ export async function renderDashboard(req, res) {
     const latestBadReviews = await Review.findAll({
       where: {
         sentiment: {
-          [Op.in]: ['negatif', 'kecewa']
-        }
+          [Op.in]: ["negatif", "kecewa"],
+        },
       },
-      order: [['time_published', 'DESC']],
-      limit: 5
+      order: [["time_published", "DESC"]],
+      limit: 5,
     });
 
     // Label sentimen untuk pengelompokan data
     const sentimentLabels = ["positif", "negatif", "netral", "puas", "kecewa"];
-    
+
     // Menginisialisasi objek jumlah sentimen dengan nilai 0
     const allTimeCounts = Object.fromEntries(
       sentimentLabels.map((label) => [label, 0]),

@@ -1,5 +1,7 @@
 // File utama untuk konfigurasi dan inisialisasi aplikasi Express.js
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as dotenv from "dotenv";
@@ -26,27 +28,39 @@ const __dirname = path.dirname(__filename);
 // Muat variabel environment dari file .env
 dotenv.config();
 
-// Inisialisasi aplikasi Express
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Konfigurasi trust proxy untuk bekerja di belakang reverse proxy
-app.set("trust proxy", 1);
-
 // Konfigurasi penyimpanan sesi menggunakan Sequelize
 const SessionStore = SequelizeStore(session.Store);
 const sessionStore = new SessionStore({
   db: sequelize,
 });
 
-// Konfigurasi view engine dan direktori views
+// Inisialisasi aplikasi Express
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Inisialisasi HTTP server
+const server = http.createServer(app);
+
+// Inisialisasi koneksi Socket.io
+export const io = new Server(server);
+
+// Handler koneksi Socket.io
+io.on("connection", (socket) => {
+  console.log("Client connected to Socket.io");
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected from Socket.io");
+  });
+});
+
+// Konfigurasi aplikasi
+app.set("trust proxy", 1);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Middleware untuk parsing body request
+// Middleware untuk parsing request dan logging
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Middleware logging HTTP request
 app.use(morgan("dev"));
 
 // Konfigurasi middleware session
@@ -88,13 +102,14 @@ app.use(
   express.static(path.join(__dirname, "node_modules/bootstrap-icons/font")),
 );
 
-// Routing untuk autentikasi (tidak memerlukan login)
+// Routing
+// 1. Routes yang tidak memerlukan otentikasi
 app.use("/", authRoutes);
-
-// Routing untuk dashboard dan ulasan (memerlukan login)
+// 2. Routes yang memerlukan otentikasi
 app.use("/", isAuthenticated, dashboardRoutes, reviewRoutes);
 
-// Middleware error handler
+// Error handlers
+// 1. Middleware error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).render("error/error", {
@@ -103,7 +118,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Middleware 404 handler
+// 2. Middleware 404 handler
 app.use((req, res) => {
   res.status(404).render("error/404", {
     message: "Page not found",
@@ -134,8 +149,8 @@ async function startServer() {
     // Inisialisasi setelan Google Maps
     await initializeGoogleMapsSetting();
 
-    // Mulai server HTTP
-    app.listen(PORT, () => {
+    // Start the HTTP server instead of the Express app directly
+    server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (error) {

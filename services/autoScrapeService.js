@@ -6,6 +6,7 @@ import {
 } from "./googleMapsService.js";
 import AutoScrapeSetting from "../models/autoScrapeSetting.js";
 import ScrapeStatus from "../models/scrapeStatus.js";
+import { io } from "../app.js";
 
 // Setelan default untuk scraping otomatis
 const DEFAULT_SETTINGS = {
@@ -149,6 +150,9 @@ function scheduleAutoScrape() {
         startTime: startTime,
       });
 
+      // Kirim event Socket.io untuk memulai scrape
+      io.emit("scrapeStatusUpdate", scrapeRecord.toJSON());
+
       // Ambil URL Google Maps dan validasi
       const googleMapsURL = await getGoogleMapsSetting();
       if (!googleMapsURL) {
@@ -168,6 +172,9 @@ function scheduleAutoScrape() {
         endTime: endTime,
         message: message,
       });
+
+      // Kirim event Socket.io untuk scrape selesai
+      io.emit("scrapeStatusUpdate", scrapeRecord.toJSON());
 
       // Perbarui waktu scrape berikutnya
       settings.nextScrape = getNextMidnight();
@@ -192,6 +199,9 @@ function scheduleAutoScrape() {
             message: errorMessage,
           });
           finalStatus = scrapeRecord.toJSON();
+
+          // Kirim event Socket.io untuk status scrape gagal
+          io.emit("scrapeStatusUpdate", finalStatus);
         } catch (updateError) {
           finalStatus = {
             type: "auto",
@@ -200,6 +210,9 @@ function scheduleAutoScrape() {
             endTime: endTime,
             message: errorMessage + " (DB update failed)",
           };
+
+          // Kirim event Socket.io untuk status scrape gagal meskipun pembuatan database gagal
+          io.emit("scrapeStatusUpdate", finalStatus);
         }
       } else {
         // Buat record failed baru jika belum ada
@@ -212,6 +225,9 @@ function scheduleAutoScrape() {
             message: `Failed to even start scrape process: ${error.message}`,
           });
           finalStatus = failedRecord.toJSON();
+
+          // Kirim event Socket.io untuk scrape gagal
+          io.emit("scrapeStatusUpdate", finalStatus);
         } catch (createError) {
           finalStatus = {
             type: "auto",
@@ -220,6 +236,9 @@ function scheduleAutoScrape() {
             endTime: endTime,
             message: errorMessage + " (DB creation failed)",
           };
+
+          // Kirim event Socket.io untuk status scrape gagal meskipun pembuatan database gagal
+          io.emit("scrapeStatusUpdate", finalStatus);
         }
       }
     }

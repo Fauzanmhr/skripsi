@@ -6,7 +6,6 @@ import {
   exportReviewsToExcel,
   getAutoScrapeSettings,
   updateAutoScrapeSettings,
-  getLatestScrapeStatus,
   handleUpdateGoogleMapsUrl,
   handleFileUpload,
   processFileAnalysis,
@@ -28,9 +27,6 @@ router.get("/reviews/export", exportReviewsToExcel);
 router.get("/reviews/auto-scrape-settings", getAutoScrapeSettings);
 // POST: Mengupdate status aktif/nonaktif scrape otomatis
 router.post("/reviews/auto-scrape-settings", updateAutoScrapeSettings);
-
-// GET: Mendapatkan status scrape terakhir untuk polling pada antarmuka
-router.get("/reviews/latest-status", getLatestScrapeStatus);
 
 // POST: Mengupdate URL Google Maps yang akan di-scrape
 router.post("/reviews/google-maps-url", handleUpdateGoogleMapsUrl);

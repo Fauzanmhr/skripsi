@@ -273,7 +273,7 @@
           <% } %>
         </div>
       </div>
-      
+
       <!-- Area filter untuk ulasan -->
       <div class="card-header bg-light py-3">
         <form id="filterForm" class="row g-2 align-items-center justify-content-center" method="GET">
@@ -397,8 +397,12 @@
 
 <%- include('./partials/footer') %>
 
-<!-- Script untuk interaksi halaman ulasan -->
+<!-- Script -->
+<script src="/socket.io/socket.io.js"></script>
 <script>
+  // Inisialisasi koneksi socket io
+  const socket = io();
+
   // Konfigurasi warna badge untuk setiap sentimen
   const badgeColors = {
     'positif': '#2E7D32',
@@ -411,10 +415,6 @@
   // Data status scraping terakhir dari server
   const initialLatestScrapeStatus = <%- JSON.stringify(latestScrapeStatus || null) %>;
 
-  // Variabel untuk polling AJAX
-  let pollingIntervalId = null;
-  const POLLING_INTERVAL_MS = 1000;
-  
   // Inisialisasi saat dokumen dimuat
   document.addEventListener('DOMContentLoaded', function() {
     // Terapkan warna untuk badge sentimen
@@ -451,8 +451,11 @@
     updateScrapeStatusRow(initialLatestScrapeStatus);
     updateCrawlButtonState(initialLatestScrapeStatus);
 
-    // Mulai polling status
-    startPolling();
+    // Listen socket io untuk update status scraping secara real-time
+    socket.on('scrapeStatusUpdate', function(statusData) {
+      updateScrapeStatusRow(statusData);
+      updateCrawlButtonState(statusData);
+    });
   });
 
   // Fungsi untuk menerapkan warna pada badge sentimen
