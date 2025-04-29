@@ -23,7 +23,6 @@ const Review = sequelize.define(
     },
   },
   {
-    timestamps: false,
     indexes: [
       {
         name: "idx_sentiment",
