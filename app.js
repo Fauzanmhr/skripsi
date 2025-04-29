@@ -5,7 +5,6 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as dotenv from "dotenv";
-import morgan from "morgan";
 import session from "express-session";
 import SequelizeStore from "connect-session-sequelize";
 import passport from "passport";
@@ -60,10 +59,9 @@ app.set("trust proxy", 1);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Middleware untuk parsing request dan logging
+// Middleware untuk parsing request
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
 
 // Konfigurasi middleware session
 app.use(

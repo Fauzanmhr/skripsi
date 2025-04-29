@@ -670,32 +670,6 @@
     }
   }
 
-  // Fungsi untuk mengambil status scraping terbaru dari server
-  async function fetchLatestStatus() {
-    try {
-      const response = await fetch('/reviews/latest-status');
-      if (!response.ok) {
-        console.error('Polling failed:', response.statusText);
-        return;
-      }
-      const statusData = await response.json();
-      updateScrapeStatusRow(statusData);
-      updateCrawlButtonState(statusData);
-    } catch (error) {
-      console.error('Error during status polling:', error);
-    }
-  }
-
-  // Memulai polling AJAX untuk status scraping
-  function startPolling() {
-    if (pollingIntervalId) {
-      clearInterval(pollingIntervalId);
-    }
-    console.log(`Starting AJAX polling every ${POLLING_INTERVAL_MS}ms`);
-    fetchLatestStatus();
-    pollingIntervalId = setInterval(fetchLatestStatus, POLLING_INTERVAL_MS);
-  }
-
   // Setup modal pengaturan scrape otomatis
   function setupAutoScrape() {
     document.getElementById('autoScrapeButton').addEventListener('click', async function() {

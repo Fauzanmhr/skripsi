@@ -257,10 +257,14 @@ export async function resetStaleScrapesOnStartup() {
       },
       { where: { status: "running" } },
     );
-  } catch (error) {}
+  } catch (error) {
+    console.error("Failed to reset stale scrapes:", error);
+  }
 }
 
 // Inisialisasi layanan scrape otomatis
 export function initAutoScrapeService() {
-  loadSettings().catch(() => {});
+  loadSettings().catch((error) => {
+    console.error("Failed to load auto scrape settings:", error);
+  });
 }

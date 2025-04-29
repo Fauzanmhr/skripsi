@@ -9,31 +9,26 @@ const PREDICT_ENDPOINT = "/predict";
 
 // Fungsi untuk menganalisis sentimen satu ulasan, dapat menerima string atau objek review
 export async function analyzeSentiment(review) {
-  try {
-    // Ekstrak teks ulasan dari parameter input
-    const reviewText = typeof review === "string" ? review : review.review;
+  // Ekstrak teks ulasan dari parameter input
+  const reviewText = typeof review === "string" ? review : review.review;
 
-    // Kirim request ke API analisis sentimen
-    const response = await axios.post(`${API_URL}${PREDICT_ENDPOINT}`, {
-      text: reviewText,
-    });
+  // Kirim request ke API analisis sentimen
+  const response = await axios.post(`${API_URL}${PREDICT_ENDPOINT}`, {
+    text: reviewText,
+  });
 
-    // Validasi respons dari API
-    if (!response.data?.sentiment) {
-      throw new Error("Invalid API response: missing sentiment prediction");
-    }
-
-    // Jika input adalah objek review, update sentiment di database
-    if (typeof review !== "string" && review.update) {
-      await review.update({ sentiment: response.data.sentiment });
-    }
-
-    // Kembalikan hasil prediksi sentimen
-    return response.data.sentiment;
-  } catch (error) {
-    // Propagasi error ke caller
-    throw error;
+  // Validasi respons dari API
+  if (!response.data?.sentiment) {
+    throw new Error("Invalid API response: missing sentiment prediction");
   }
+
+  // Jika input adalah objek review, update sentiment di database
+  if (typeof review !== "string" && review.update) {
+    await review.update({ sentiment: response.data.sentiment });
+  }
+
+  // Kembalikan hasil prediksi sentimen
+  return response.data.sentiment;
 }
 
 // Fungsi untuk memproses ulasan yang belum dianalisis (sentiment = null)
