@@ -1,9 +1,10 @@
-// Controller untuk autentikasi dan manajemen user (login, logout, ganti password)
+// Controller untuk autentikasi dan manajemen user
 import User from "../models/user.js";
+import passport from 'passport';
 
-// Render halaman login (redirect ke dashboard jika sudah login)
+// Render halaman login, redirect ke dashboard jika sudah login
 export function renderLoginPage(req, res) {
-  if (req.user) {
+  if (req.isAuthenticated()) {
     return res.redirect("/");
   }
   res.render("auth/login", {
@@ -13,45 +14,41 @@ export function renderLoginPage(req, res) {
   });
 }
 
-// Proses autentikasi user saat login
-export async function handleLogin(req, res) {
-  try {
-    // Ambil username dan password dari body request
-    const { username, password } = req.body;
-
-    // Validasi input
-    if (!username || !password) {
-      return res.redirect("/login?error=Username+dan+password+harus+diisi");
+// Proses autentikasi user saat login menggunakan Passport.js
+export function handleLogin(req, res, next) {
+  passport.authenticate('local', (err, user, info) => {
+    // Error handling untuk kesalahan server
+    if (err) { 
+      console.error("Login error:", err);
+      return res.redirect("/login?error=Gagal+login.+Silakan+coba+lagi");
     }
-
-    // Cari user di database
-    const user = await User.findOne({ where: { username } });
-
-    // Validasi user dan password
-    if (!user || !(await user.comparePassword(password))) {
-      return res.redirect("/login?error=Username+atau+password+salah");
+    
+    // Jika autentikasi gagal
+    if (!user) {
+      return res.redirect(`/login?error=${encodeURIComponent(info.message || 'Username atau password salah')}`);
     }
-
-    // Simpan user ID di session
-    req.session.userId = user.id;
-
-    // Redirect ke halaman yang diminta sebelumnya atau ke dashboard
-    const returnTo = req.session.returnTo || "/";
-    delete req.session.returnTo;
-
-    res.redirect(returnTo);
-  } catch (error) {
-    // Handling error login
-    console.error("Login error:", error);
-    res.redirect("/login?error=Gagal+login.+Silakan+coba+lagi");
-  }
+    
+    // Jika autentikasi berhasil, log in user
+    req.logIn(user, (err) => {
+      if (err) { 
+        console.error("Login error:", err);
+        return res.redirect("/login?error=Gagal+login.+Silakan+coba+lagi");
+      }
+      
+      // Redirect ke URL yang diminta sebelumnya atau dashboard
+      const returnTo = req.session.returnTo || "/";
+      delete req.session.returnTo;
+      return res.redirect(returnTo);
+    });
+  })(req, res, next);
 }
 
-// Proses logout user
-export function handleLogout(req, res) {
-  req.session.destroy((err) => {
+// Proses logout user menggunakan Passport.js
+export function handleLogout(req, res, next) {
+  req.logout((err) => {
     if (err) {
       console.error("Logout error:", err);
+      return next(err);
     }
     res.redirect("/login");
   });
@@ -60,16 +57,13 @@ export function handleLogout(req, res) {
 // Membuat user admin default jika belum ada user di database
 export async function createInitialUser() {
   try {
-    // Cek jumlah user yang ada di database
     const userCount = await User.count();
 
-    // Jika belum ada user, buat user admin default
     if (userCount === 0) {
       await User.create({
         username: "admin",
         password: "admin",
       });
-
       console.log("Initial user created");
     }
   } catch (error) {
@@ -90,33 +84,32 @@ export function renderChangePasswordPage(req, res) {
 // Proses ganti password user
 export async function handleChangePassword(req, res) {
   try {
-    // Ambil data password dari body request
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    // Validasi input
+    // Validasi input data
     if (!currentPassword || !newPassword || !confirmPassword) {
-      return res.redirect("/change-password?error=All+fields+are+required");
+      return res.redirect("/change-password?error=Semua+field+harus+diisi");
     }
 
-    // Validasi kecocokan password baru dan konfirmasi
+    // Validasi password baru sama dengan konfirmasi password
     if (newPassword !== confirmPassword) {
-      return res.redirect("/change-password?error=New+passwords+do+not+match");
+      return res.redirect("/change-password?error=Password+baru+tidak+cocok+dengan+konfirmasi");
     }
 
     // Validasi password baru berbeda dengan password lama
     if (currentPassword === newPassword) {
       return res.redirect(
-        "/change-password?error=New+password+must+be+different+from+current+password",
+        "/change-password?error=Password+baru+harus+berbeda+dengan+password+lama",
       );
     }
 
-    // Ambil data user dan validasi password lama
+    // Validasi password lama benar
     const user = await User.findByPk(req.user.id);
     const isPasswordValid = await user.comparePassword(currentPassword);
 
     if (!isPasswordValid) {
       return res.redirect(
-        "/change-password?error=Current+password+is+incorrect",
+        "/change-password?error=Password+lama+tidak+benar",
       );
     }
 
@@ -124,11 +117,9 @@ export async function handleChangePassword(req, res) {
     user.password = newPassword;
     await user.save();
 
-    // Redirect dengan pesan sukses
-    res.redirect("/change-password?success=Password+changed+successfully");
+    res.redirect("/change-password?success=Password+berhasil+diubah");
   } catch (error) {
-    // Handling error ganti password
     console.error("Change password error:", error);
-    res.redirect("/change-password?error=Failed+to+change+password");
+    res.redirect("/change-password?error=Gagal+mengubah+password");
   }
 }

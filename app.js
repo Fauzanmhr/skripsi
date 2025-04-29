@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 import morgan from "morgan";
 import session from "express-session";
 import SequelizeStore from "connect-session-sequelize";
+import passport from "passport";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -20,6 +21,7 @@ import { sequelize } from "./config/database.js";
 import { isAuthenticated, setLocals } from "./middlewares/authMiddleware.js";
 import { createInitialUser } from "./controllers/authController.js";
 import { initializeGoogleMapsSetting } from "./services/googleMapsService.js";
+import "./config/passport.js";  // Import konfigurasi passport
 
 // Konfigurasi path untuk metode import ES Module
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +79,10 @@ app.use(
     },
   }),
 );
+
+// Inisialisasi Passport dan restore session authentication
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Middleware untuk menyediakan informasi user di semua view
 app.use(setLocals);
