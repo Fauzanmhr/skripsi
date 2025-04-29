@@ -3,7 +3,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-// Create Sequelize instance with MariaDB
+// Sequelize MariaDB
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -15,12 +15,6 @@ export const sequelize = new Sequelize(
     logging: process.env.NODE_ENV === "development" ? console.log : false,
     dialectOptions: {
       timezone: "+00:00",
-    },
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
     },
   },
 );
