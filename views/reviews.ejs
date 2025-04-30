@@ -455,6 +455,14 @@
     socket.on('scrapeStatusUpdate', function(statusData) {
       updateScrapeStatusRow(statusData);
       updateCrawlButtonState(statusData);
+      
+      // Muat ulang halaman otomatis ketika scraping selesai
+      if (statusData.status === 'completed') {
+        // Tambahkan delay 1.5 detik sebelum memuat ulang untuk menampilkan pesan selesai
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
     });
   });
 
@@ -874,16 +882,9 @@
         const result = await response.json();
 
         if (response.ok) {
-          modal.hide();
-
-          if (result.dataDeleted) {
-            showModalError('Google Maps URL updated and all existing data has been deleted.', 'warning');
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } else {
-            showModalError('Google Maps URL updated successfully.', 'success');
-          }
+          // Muat ulang halaman otomatis
+          window.location.href = window.location.pathname;
+          return;
         } else {
           showModalError(result.message || 'Failed to update URL');
         }
