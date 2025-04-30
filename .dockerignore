@@ -38,3 +38,10 @@ build/
 *.egg-info/
 Procfile
 vercel.json
+
+#model files
+sentiment_model.zip
+sentiment_model/
+# Ignore backup files
+backup/
+*.bak
