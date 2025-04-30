@@ -89,19 +89,19 @@ async def translate(text: str) -> str:
         # Gagal total setelah retry
         raise ValueError(f"Translation failed after {MAX_RETRIES} attempts.")
 
-# Pipeline preprocessing teks
+# Fungsi preprocessing teks
 async def preprocess_text(text):
     text = await translate(text)  # Menggunakan DeepL
-    text = emoji.demojize(text, language='id') if all(char in emoji.EMOJI_DATA for char in text.strip()) else text # konversi emoji
-    text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
-    text = text.lower().strip()  # Konversi ke huruf kecil dan hapus spasi
+    text = emoji.demojize(text, language='id') if all(char in emoji.EMOJI_DATA for char in text.strip()) else text # konversi emoji (jika hanya ada emoji dalam teks)
+    text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8') # konversi non utf8 (café -> cafe)
+    text = text.lower().strip()  # Case folding dan stripping
     text = re.sub(r'(@\w+|http\S+)', ' ', text)  # Hapus mention & URL
-    text = re.sub(r'(.)\1{2,}', r'\1', text)  # Hapus karakter berulang
-    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Hapus non-alfabet
-    text = re.sub(r'\s+', ' ', text).strip()  # Hapus spasi berlebih
+    text = re.sub(r'(.)\1{2,}', r'\1', text)  # Normalisasi karakter berulang
+    text = re.sub(r'[^a-zA-Z ]', ' ', text)  # Hapus karakter non-alphabet
+    text = re.sub(r'\s+', ' ', text).strip()  # Normalisasi spasi
     tokens = word_tokenize(text)  # Tokenisasi
     tokens = [normalize_dict.get(word, word) for word in tokens]  # Normalisasi slang
-    tokens = [stemmer.stem(token) for token in tokens]  # Stemming kata
+    tokens = [stemmer.stem(token) for token in tokens]  # Stemming
     tokens = [word for word in tokens if word]  # Hapus tokens kosong
     return ' '.join(tokens)
 
@@ -126,7 +126,7 @@ async def predict_sentiment(input_text: TextInput):
     except ValueError as e:
         return {"error": str(e)}
 
-    inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=256)
+    inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     inputs = {key: value.to(device) for key, value in inputs.items()}
 
     with torch.no_grad():
