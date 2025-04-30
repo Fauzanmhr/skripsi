@@ -29,7 +29,7 @@ app = FastAPI(
 )
 
 # Konfigurasi DeepL
-DEEPL_API_KEY = "12ffed92-8918-46de-8423-78d91387c3c4:fx"  # api key
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")  # api key
 USE_FREE_API = True                 # Menggunakan API Gratis DeepL
 MAX_RETRIES = 3                     # Maksimal percobaan per translasi
 DELAY_SUCCESS = 1.0                 # Delay antara request sukses (detik)
