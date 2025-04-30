@@ -19,7 +19,14 @@ import os
 
 # Inisialisasi aplikasi FastAPI
 load_dotenv()
-app = FastAPI()
+app = FastAPI(
+    title="Sentiment-API",
+    description="API for analyzing sentiment in Indonesian text",
+    version="1.0.0",
+    contact={
+        "name": "Fauzanmhr",
+    }
+)
 
 # Konfigurasi DeepL
 DEEPL_API_KEY = "12ffed92-8918-46de-8423-78d91387c3c4:fx"  # api key
