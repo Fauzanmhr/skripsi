@@ -554,30 +554,21 @@
         }
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing JSON response:", parseError);
+        return;
+      }
 
       if (response.ok) {
         console.log("Crawl request successful:", result.message);
       } else {
         console.error("Scrape request failed:", result.message || 'Unknown error');
-        alert(`Error: ${result.message || 'Terjadi kesalahan saat memulai scrape'}`);
-        updateCrawlButtonState({
-          status: 'idle'
-        });
       }
     } catch (error) {
       console.error('Crawl operation fetch failed:', error);
-      updateScrapeStatusRow({
-        type: 'manual',
-        status: 'failed',
-        startTime: new Date(),
-        endTime: new Date(),
-        message: `Fetch error: ${error.message}`
-      });
-      updateCrawlButtonState({
-        status: 'failed'
-      });
-      alert('Gagal menghubungi server untuk memulai scrape. Periksa koneksi Anda.');
     }
   }
 
@@ -686,7 +677,16 @@
 
       try {
         const response = await fetch('/reviews/auto-scrape-settings');
-        const settings = await response.json();
+        let settings;
+        try {
+          settings = await response.json();
+        } catch (parseError) {
+          console.error("Failed to parse auto scrape settings JSON:", parseError);
+          lastAutoScrapeInfoDiv.innerHTML = 'Informasi tidak tersedia.';
+          const autoScrapeModal = new bootstrap.Modal(document.getElementById('autoScrapeModal'));
+          autoScrapeModal.show();
+          return;
+        }
 
         document.getElementById('autoScrapeEnabled').checked = settings.enabled;
 
@@ -710,8 +710,7 @@
                 messageDetails = `(${lastData.message})`;
               }
             } else {
-              const errorDetail = lastData.message.split(': ').slice(1).join(': ') || 'Lihat log server';
-              messageDetails = `<span class="text-danger">(Error: ${errorDetail})</span>`;
+              messageDetails = `<span class="text-danger">(${lastData.message})</span>`;
             }
           }
 
@@ -733,8 +732,7 @@
 
       } catch (error) {
         console.error('Failed to fetch auto scrape settings:', error);
-        lastAutoScrapeInfoDiv.innerHTML = '<span class="text-danger">Gagal memuat informasi scrape terakhir.</span>';
-        alert('Gagal memuat pengaturan scrape otomatis.');
+        lastAutoScrapeInfoDiv.innerHTML = '<span class="text-muted">Informasi tidak tersedia.</span>';
       }
 
       const autoScrapeModal = new bootstrap.Modal(document.getElementById('autoScrapeModal'));
