@@ -115,7 +115,7 @@
                           <%= review.sentiment %>
                         </span>
                       </h6>
-                      <small class="text-muted"><%= new Date(review.time_published).toLocaleDateString('id-ID') %></small>
+                      <small class="text-muted"><i class="bi bi-calendar me-1"></i><%= new Date(review.time_published).toLocaleDateString('id-ID') %></small>
                     </div>
                     <p class="mb-1 text-wrap"><%= review.review %></p>
                   </div>
