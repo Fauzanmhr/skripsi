@@ -145,6 +145,7 @@
     // Konfigurasi dashboard termasuk data statistik dan warna sentimen
     config: {
       stats: <%- JSON.stringify(stats) %>,
+      placeName: <%- JSON.stringify(placeName || '') %>,
       colors: {
         'positif': 'rgba(46, 125, 50, 0.8)',
         'negatif': 'rgba(183, 28, 28, 0.8)',
@@ -200,9 +201,9 @@
       });
     },
 
-    // Buat chart distribusi sentimen untuk semua waktu
+    // Buat chart distribusi sentimen
     createAllTimeChart: function(labels, data) {
-      this.createSentimentChart(labels, data, 'sentimentChart', 'Semua Waktu', 'bar');
+      this.createSentimentChart(labels, data, 'sentimentChart', 'bar');
     },
 
     // Handler click pada chart untuk navigasi ke halaman ulasan dengan filter
@@ -211,7 +212,7 @@
     },
 
     // Fungsi untuk membuat chart sentimen dengan konfigurasi tertentu
-    createSentimentChart: function(labels, data, chartId, periodLabel, chartType) {
+    createSentimentChart: function(labels, data, chartId, chartType) {
       const ctx = document.getElementById(chartId).getContext('2d');
       const backgroundColors = labels.map(label => this.config.colors[label]);
       const self = this;
@@ -266,7 +267,7 @@
           plugins: {
             title: {
               display: true,
-              text: `Analisis Sentimen ${periodLabel}`,
+              text: `Analisis Sentimen ${self.config.placeName ? '- ' + self.config.placeName : ''}`,
               font: {
                 size: 16,
                 weight: 'bold'
