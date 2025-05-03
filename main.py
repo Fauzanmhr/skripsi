@@ -46,6 +46,9 @@ async def translate(text: str) -> str:
         translation_cache[text] = text
         return text
     
+    # delay 0.5 detik untuk menghindari rate limit
+    await asyncio.sleep(0.5)
+    
     # translate text
     try:
         translated = translator.translate_text(text, target_lang="ID").text
