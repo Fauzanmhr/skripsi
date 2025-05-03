@@ -11,7 +11,7 @@ import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import BertTokenizer, BertForSequenceClassification
-from deep_translator import DeeplTranslator
+from deepl import Translator
 from nltk.tokenize import word_tokenize
 from lingua import Language, LanguageDetectorBuilder
 from dotenv import load_dotenv
@@ -28,12 +28,33 @@ app = FastAPI(
     }
 )
 
-# Konfigurasi DeepL
-DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")  # api key
-USE_FREE_API = os.getenv("DEEPL_USE_FREE_API", "True") # Menggunakan API Gratis DeepL
-MAX_RETRIES = 3                     # Maksimal percobaan per translasi
-DELAY_SUCCESS = 1.0                 # Delay antara request sukses (detik)
-DELAY_FAILURE = 5                   # Delay setelah request gagal (detik)
+# Inisialisasi DeepL Translator dengan API key dari environment variable
+translator = Translator(auth_key=os.getenv("DEEPL_API_KEY"))
+
+# Cache translate untuk menghindari permintaan berulang
+translation_cache = {}
+
+async def translate(text: str) -> str:
+    # Cek cache terlebih dahulu
+    if text in translation_cache:
+        return translation_cache[text]
+    
+    # Lewati jika sudah bahasa Indonesia
+    detected_lang = detector.detect_language_of(text)
+    print(f"Detected: {detected_lang}")
+    if detected_lang == Language.INDONESIAN:
+        translation_cache[text] = text
+        return text
+    
+    # translate text
+    try:
+        translated = translator.translate_text(text, target_lang="ID").text
+        translation_cache[text] = translated
+        print(f"Translated: '{text}' → '{translated}'")
+        return translated
+    except Exception as e:
+        print(f"Translation failed: {str(e)[:100]}...")
+        raise ValueError(f"Translation failed: {str(e)}")
 
 # Cek ketersediaan CUDA
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,49 +73,15 @@ LABEL_MAPPING = {0: 'netral', 1: 'positif', 2: 'negatif', 3: 'puas', 4: 'kecewa'
 # Memuat resource NLP
 nltk.download('punkt_tab', quiet=True)
 stemmer = sastrawi.Stemmer()
-SUPPORTED_LANGUAGES = [Language.ENGLISH, Language.INDONESIAN]
+
+# Inisialisasi detektor bahasa
+SUPPORTED_LANGUAGES = [Language.INDONESIAN, Language.ENGLISH]
 detector = LanguageDetectorBuilder.from_languages(*SUPPORTED_LANGUAGES).build()
 
 # Memuat kamus normalisasi
 normalize_dict_path = "./normal.csv"
 normalize_dict = pd.read_csv(normalize_dict_path)
 normalize_dict = dict(zip(normalize_dict['word'], normalize_dict['normal']))
-
-# Cache translate untuk menghindari permintaan berulang
-translation_cache = {}
-
-async def translate(text: str) -> str:
-    # Cek cache terlebih dahulu
-    if text in translation_cache:
-        return translation_cache[text]
-    
-    # Lewati jika sudah bahasa Indonesia
-    detected_lang = detector.detect_language_of(text)
-    if detected_lang == Language.INDONESIAN:
-        translation_cache[text] = text
-        return text
-    
-    # Mencoba translate dengan mekanisme retry
-    for attempt in range(MAX_RETRIES):
-        try:
-            translator = DeeplTranslator(
-                api_key=DEEPL_API_KEY,
-                source="en",
-                target="id",
-                use_free_api=USE_FREE_API
-            )
-            translated = translator.translate(text)
-            translation_cache[text] = translated
-            await asyncio.sleep(DELAY_SUCCESS)  # Pembatasan rate
-            print(f"Translated: '{text[:50]}...' → '{translated[:50]}...'")
-            return translated
-        except Exception as e:
-            wait_time = DELAY_FAILURE * (attempt + 1)
-            print(f"Percobaan {attempt+1} gagal (Menunggu {wait_time}s): {str(e)[:100]}...")
-            await asyncio.sleep(wait_time)
-    
-        # Gagal total setelah retry
-        raise ValueError(f"Translation failed after {MAX_RETRIES} attempts.")
 
 # Fungsi preprocessing teks
 async def preprocess_text(text):
@@ -140,6 +127,9 @@ async def predict_sentiment(input_text: TextInput):
         outputs = model(**inputs)
 
     prediction = torch.argmax(outputs.logits, dim=-1).item()
+    print(f"Input: {input_text.text}")
+    print(f"Processed: {processed_text}")
+    print(f"Predicted: {LABEL_MAPPING[prediction]}")
     return {"sentiment": LABEL_MAPPING[prediction]}
 
 # Menjalankan aplikasi
