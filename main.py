@@ -115,7 +115,7 @@ async def head():
 async def root():
     return {"message": "API berjalan"}
 
-# Endpoint untuk prediksi sentimen
+# Endpoint untuk klasifikasi sentimen
 @app.post("/predict")
 async def predict_sentiment(input_text: TextInput):
     try:
