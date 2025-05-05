@@ -1,5 +1,5 @@
 // Layanan untuk menganalisis sentimen dari ulasan menggunakan API eksternal
-import axios from "axios";
+import ky from "ky";
 import cron from "node-cron";
 import Review from "../models/review.js";
 
@@ -13,22 +13,24 @@ export async function analyzeSentiment(review) {
   const reviewText = typeof review === "string" ? review : review.review;
 
   // Kirim request ke API analisis sentimen
-  const response = await axios.post(`${API_URL}${PREDICT_ENDPOINT}`, {
-    text: reviewText,
-  });
+  const response = await ky.post(`${API_URL}${PREDICT_ENDPOINT}`, {
+    json: {
+      text: reviewText,
+    }
+  }).json();
 
   // Validasi respons dari API
-  if (!response.data?.sentiment) {
+  if (!response?.sentiment) {
     throw new Error("Invalid API response: missing sentiment prediction");
   }
 
   // Jika input adalah objek review, update sentiment di database
   if (typeof review !== "string" && review.update) {
-    await review.update({ sentiment: response.data.sentiment });
+    await review.update({ sentiment: response.sentiment });
   }
 
   // Kembalikan hasil prediksi sentimen
-  return response.data.sentiment;
+  return response.sentiment;
 }
 
 // Fungsi untuk memproses ulasan yang belum dianalisis (sentiment = null)
