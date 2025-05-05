@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 import session from "express-session";
 import SequelizeStore from "connect-session-sequelize";
 import passport from "passport";
+import morgan from "morgan";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -62,6 +63,9 @@ app.set("views", path.join(__dirname, "views"));
 // Middleware untuk parsing request
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Tambahkan morgan untuk logging HTTP request
+app.use(morgan("dev"));
 
 // Konfigurasi middleware session
 app.use(
