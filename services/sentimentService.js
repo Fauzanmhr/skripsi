@@ -5,7 +5,7 @@ import Review from "../models/review.js";
 
 // URL API sentimen analisis, menggunakan nilai default jika tidak diset di environment
 const API_URL = process.env.SENTIMENT_API_URL || "http://localhost:8000";
-const PREDICT_ENDPOINT = "/predict";
+const SENTIMENT_ENDPOINT = "/sentiment";
 
 // Fungsi untuk menganalisis sentimen satu ulasan, dapat menerima string atau objek review
 export async function analyzeSentiment(review) {
@@ -13,7 +13,7 @@ export async function analyzeSentiment(review) {
   const reviewText = typeof review === "string" ? review : review.review;
 
   // Kirim request ke API analisis sentimen
-  const response = await ky.post(`${API_URL}${PREDICT_ENDPOINT}`, {
+  const response = await ky.post(`${API_URL}${SENTIMENT_ENDPOINT}`, {
     json: {
       text: reviewText,
     }
@@ -21,7 +21,7 @@ export async function analyzeSentiment(review) {
 
   // Validasi respons dari API
   if (!response?.sentiment) {
-    throw new Error("Invalid API response: missing sentiment prediction");
+    throw new Error("Invalid API response: missing sentiment");
   }
 
   // Jika input adalah objek review, update sentiment di database
@@ -29,7 +29,7 @@ export async function analyzeSentiment(review) {
     await review.update({ sentiment: response.sentiment });
   }
 
-  // Kembalikan hasil prediksi sentimen
+  // Kembalikan hasil analisis sentimen
   return response.sentiment;
 }
 
