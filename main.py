@@ -10,7 +10,7 @@ import emoji
 import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers.models.bert import BertTokenizer, BertForSequenceClassification
 from deepl import Translator
 from nltk.tokenize import word_tokenize
 from lingua import Language, LanguageDetectorBuilder
@@ -108,16 +108,16 @@ class TextInput(BaseModel):
 
 @app.head("/")
 async def head():
-    return {"message": "API berjalan"}
+    return {"message": "API Running"}
 
 # Endpoint root
 @app.get("/")
 async def root():
-    return {"message": "API berjalan"}
+    return {"message": "API Running"}
 
-# Endpoint untuk klasifikasi sentimen
-@app.post("/predict")
-async def predict_sentiment(input_text: TextInput):
+# Endpoint untuk analisis sentimen
+@app.post("/sentiment")
+async def sentiment(input_text: TextInput):
     try:
         processed_text = await preprocess_text(input_text.text)
     except ValueError as e:
@@ -129,11 +129,11 @@ async def predict_sentiment(input_text: TextInput):
     with torch.no_grad():
         outputs = model(**inputs)
 
-    prediction = torch.argmax(outputs.logits, dim=-1).item()
+    sentiment = torch.argmax(outputs.logits, dim=-1).item()
     print(f"Input: {input_text.text}")
     print(f"Processed: {processed_text}")
-    print(f"Predicted: {LABEL_MAPPING[prediction]}")
-    return {"sentiment": LABEL_MAPPING[prediction]}
+    print(f"Sentiment: {LABEL_MAPPING[sentiment]}")
+    return {"sentiment": LABEL_MAPPING[sentiment]}
 
 # Menjalankan aplikasi
 if __name__ == "__main__":
