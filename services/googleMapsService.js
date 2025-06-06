@@ -89,8 +89,7 @@ export async function fetchReviews() {
     // Scrape ulasan dengan menggunakan google-maps-review-scraper
     const reviews = await scraper(googleMapsURL, {
       sort_type: "newest", // Urutkan berdasarkan terbaru
-      search_query: "", // Tanpa filter pencarian
-      clean: true, // Bersihkan output
+      clean: true // Bersihkan output
     });
 
     // Parse hasil scraping dari JSON string
