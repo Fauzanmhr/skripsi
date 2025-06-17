@@ -129,11 +129,12 @@ async def sentiment(input_text: TextInput):
     with torch.no_grad():
         outputs = model(**inputs)
 
-    sentiment = torch.argmax(outputs.logits, dim=-1).item()
+    prediction = torch.argmax(outputs.logits, dim=-1).item()
     print(f"Input: {input_text.text}")
     print(f"Processed: {processed_text}")
-    print(f"Sentiment: {LABEL_MAPPING[sentiment]}")
-    return {"sentiment": LABEL_MAPPING[sentiment]}
+    print(f"Prediction: {prediction}")
+    print(f"Sentiment: {LABEL_MAPPING[prediction]}")
+    return {"sentiment": LABEL_MAPPING[prediction]}
 
 # Menjalankan aplikasi
 if __name__ == "__main__":
