@@ -59,15 +59,10 @@ async def translate(text: str) -> str:
         print(f"Translation failed: {str(e)[:100]}...")
         raise ValueError(f"Translation failed: {str(e)}")
 
-# Cek ketersediaan CUDA
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Menggunakan device: {device}")
-
 # Memuat model BERT dan tokenizer yang sudah dilatih sebelumnya
 MODEL_PATH = "./sentiment_model"
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
-model.to(device)  # Pindahkan model ke CUDA jika tersedia
 model.eval()
 
 # label sentimen
@@ -124,12 +119,11 @@ async def sentiment(input_text: TextInput):
         return {"error": str(e)}
 
     inputs = tokenizer(processed_text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    inputs = {key: value.to(device) for key, value in inputs.items()}
 
     with torch.no_grad():
         outputs = model(**inputs)
 
-    prediction = torch.argmax(outputs.logits, dim=-1).item()
+    prediction = int(torch.argmax(outputs.logits, dim=-1).item())
     print(f"Input: {input_text.text}")
     print(f"Processed: {processed_text}")
     print(f"Prediction: {prediction}")
