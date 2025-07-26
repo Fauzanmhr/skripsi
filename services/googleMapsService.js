@@ -105,9 +105,8 @@ export async function fetchReviews() {
       parsedReviews
         .filter(
           (review) =>
-            review.review?.text?.trim() &&
-            (review.review?.language === "id" || review.review?.language === "en")
-        ) // Filter ulasan kosong dan hanya bahasa Indonesia/Inggris
+            review.review?.text?.trim()
+        ) // Filter ulasan kosong
         .map((review) => ({
           id: review.review_id,
           review: cleanText(review.review.text),
